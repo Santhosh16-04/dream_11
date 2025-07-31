@@ -1,0 +1,51 @@
+{
+  "match": {
+    "team1": "EN-W",
+    "team2": "IN-W",
+    "time_left": "3h 56m left",
+    "wallet_balance": 49
+  },
+  "contest": {
+    "guaranteed": true,
+    "plus": true,
+    "prize_pool": "₹14 Crores",
+    "max_prize_pool": "₹21 Crores",
+    "spots_left": 2638992,
+    "total_spots": 3759398,
+    "original_entry": 49,
+    "discounted_entry": 29,
+    "first_prize": "₹1Cr",
+    "winning_percent": 65,
+    "max_members": 40,
+    "max_pool": "₹21 Crores"
+  },
+  "tabs": [
+    { "title": "Winnings" },
+    { "title": "Leaderboard" }
+  ],
+  "sub_tabs": [
+    { "title": "Guaranteed Breakup" },
+    { "title": "Maximum Breakup" }
+  ],
+  "winnings": {
+    "guaranteed_breakup": [
+      { "rank": 1, "winnings": "₹1 Crore" },
+      { "rank": 2, "winnings": "₹18 Lakhs" },
+      { "rank": 3, "winnings": "₹7.50 Lakhs" },
+      { "rank": 4, "winnings": "₹3 Lakhs" },
+      { "rank": 5, "winnings": "₹2 Lakhs" },
+      { "rank": 6, "winnings": "₹1 Lakh" },
+      { "rank": 7, "winnings": "₹50,000" },
+      { "rank": 8, "winnings": "₹40,000" }
+    ],
+    "maximum_breakup": [
+      { "rank": 1, "winnings": "₹1.2 Crore" },
+      { "rank": 2, "winnings": "₹20 Lakhs" },
+      { "rank": 3, "winnings": "₹8 Lakhs" }
+    ]
+  },
+  "leaderboard": [
+    { "rank": 1, "user": "Player1", "points": 350 },
+    { "rank": 2, "user": "Player2", "points": 340 }
+  ]
+} 

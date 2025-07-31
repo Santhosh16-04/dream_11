@@ -1,0 +1,79 @@
+	Work Report – Mumbai 11
+
+
+	📅 18/06/2025 (07:30 PM – 10:00 PM)
+	Created a new Flutter project
+
+	Designed UI for Mobile Number and OTP Verification screens
+
+	📅 19/06/2025 (07:30 PM – 10:00 PM)
+	Continued UI development for Mobile and OTP screens
+
+	Implemented input field validations
+
+	📅 20/06/2025
+	⏰ (07:00 AM – 08:00 AM)
+	Started UI design for the Home Screen
+
+	⏰ (07:00 PM – 10:00 PM)
+	Continued Home Screen design
+
+	Designed UI for the Registration screen within the app
+
+	📅 21/06/2025
+	⏰ (07:00 AM – 08:00 AM)
+	Continued Registration UI design
+	Added input validations for registration fields
+
+	⏰ (07:00 PM – 10:00 PM)
+	Created local dynamic JSON templates for dynamic rendering on the Home Screen
+
+
+	📅 22/06/2025
+	⏰ (07:00 AM – 08:00 AM)
+	Worked on writing functionalities for dynamic JSON fetch on the Home screen.
+
+	⏰ (07:30 PM – 09:00 PM)
+	Continued writing functionalities for dynamic JSON fetch on the Home screen.
+
+	📅 23/06/2025
+	⏰ (07:00 AM – 08:00 AM)
+	Created dummy data for all sports categories and displayed them dynamically on the Home screen based on their respective categories.
+
+	⏰ (07:30 PM – 10:00 PM)
+	Continued creating dummy data for all sports categories and showing them dynamically on the Home screen based on their respective categories.
+
+	📅 24/06/2025
+	⏰ (07:00 AM – 08:00 AM)
+	Worked on UI design corrections for the Home screen.
+
+	⏰ (07:30 PM – 10:00 PM)
+	Continued UI design corrections for the Home screen.
+
+	📅 25/06/2025
+	⏰ (07:00 AM – 08:00 AM)
+	Implemented dynamic JSON values for the navigation drawer.
+
+	⏰ (06:00 PM – 10:00 PM)
+	Designed the UI for the navigation drawer.
+
+	📅 26/06/2025
+	⏰ (07:00 AM – 08:00 AM)
+	Designed the "My Profile" screen.
+
+	⏰ (06:00 PM – 10:30 PM)
+	Worked on designing the "My Profile" screen within the app.
+
+	📅 27/06/2025
+	⏰ (07:00 AM – 08:00 AM)
+	Implemented dynamic JSON for a particular contest.
+
+	⏰ (06:00 PM – 10:00 PM)
+	Continued working on dynamic JSON integration for a particular contest.
+
+	📅 28/06/2025
+	⏰ (07:00 AM – 09:00 AM)
+	Designed the screen for a particular contest.
+
+	⏰ (10:00 AM – 03:00 PM)
+	Continued working on the UI design for the particular contest screen.

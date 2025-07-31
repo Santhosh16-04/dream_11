@@ -1,0 +1,194 @@
+{
+  "match": {
+    "team1": "TGS",
+    "team2": "THU-B",
+    "time_left": "11m 51s left",
+    "balance": 49,
+    "team1_logo": "https://example.com/tgs.png",
+    "team2_logo": "https://example.com/thub.png"
+  },
+  "appbar_actions": [
+    { "icon": "wallet", "route": "/add-cash" },
+    { "icon": "settings", "route": "/settings" }
+  ],
+  "tabs": [
+    { "title": "Contests" },
+    { "title": "My Contests" },
+    { "title": "Teams" }
+  ],
+  "filters": [
+    { "title": "Entry" },
+    { "title": "Spots" },
+    { "title": "Prize Pool" },
+    { "title": "Winners" }
+  ],
+  "categories": [
+    {
+      "title": "Discounted Entry",
+      "subtitle": "Up to ₹20.0 can be utilised for the contests below",
+      "tag": "DISCOUNT",
+      "contests": [
+        {
+          "verified": true,
+          "guaranteed": true,
+          "plus": true,
+          "prize": "₹20 Lakhs",
+          "original_entry": 49,
+          "discounted_entry": 29,
+          "spots_left": 6021,
+          "total_spots": 53705,
+          "first_prize": "₹1L",
+          "winning_percent": 64,
+          "max_entries": 20,
+          "max_pool": "₹30 Lakhs"
+        },
+        {
+          "verified": true,
+          "guaranteed": true,
+          "prize": "₹7 Lakhs",
+          "original_entry": 39,
+          "discounted_entry": 19,
+          "spots_left": 2273,
+          "total_spots": 15000,
+          "first_prize": "₹50K",
+          "winning_percent": 55,
+          "max_entries": 15,
+          "max_pool": "₹10 Lakhs"
+        },
+        {
+          "verified": true,
+          "guaranteed": true,
+          "prize": "₹15 Lakhs",
+          "original_entry": 99,
+          "discounted_entry": 69,
+          "spots_left": 15432,
+          "total_spots": 25000,
+          "first_prize": "₹75K",
+          "winning_percent": 70,
+          "max_entries": 25,
+          "max_pool": "₹20 Lakhs"
+        }
+      ]
+    },
+    {
+      "title": "Only For Beginners",
+      "contests": [
+        {
+          "flexible_prize": true,
+          "prize": "₹100",
+          "entry": 10,
+          "spots_left": 5,
+          "total_spots": 12,
+          "first_prize": "₹25",
+          "winning_percent": 67,
+          "max_entries": 1
+        },
+        {
+          "flexible_prize": true,
+          "prize": "₹200",
+          "entry": 20,
+          "spots_left": 8,
+          "total_spots": 20,
+          "first_prize": "₹50",
+          "winning_percent": 60,
+          "max_entries": 1
+        },
+        {
+          "flexible_prize": true,
+          "prize": "₹500",
+          "entry": 50,
+          "spots_left": 12,
+          "total_spots": 30,
+          "first_prize": "₹125",
+          "winning_percent": 65,
+          "max_entries": 1
+        },
+        {
+          "flexible_prize": true,
+          "prize": "₹1000",
+          "entry": 100,
+          "spots_left": 15,
+          "total_spots": 50,
+          "first_prize": "₹250",
+          "winning_percent": 70,
+          "max_entries": 1
+        },
+        {
+          "flexible_prize": true,
+          "prize": "₹2000",
+          "entry": 200,
+          "spots_left": 20,
+          "total_spots": 100,
+          "first_prize": "₹500",
+          "winning_percent": 75,
+          "max_entries": 1
+        }
+      ]
+    },
+    {
+      "title": "Multiplier Contests",
+      "view_all": true,
+      "contests": [
+        {
+          "flexible_prize": true,
+          "prize": "₹1.50 Lakhs",
+          "entry": 25000,
+          "spots_left": 0,
+          "total_spots": 0,
+          "first_prize": "",
+          "winning_percent": 0,
+          "max_entries": 0,
+          "max_pool": ""
+        },
+        {
+          "flexible_prize": true,
+          "prize": "₹2.50 Lakhs",
+          "entry": 50000,
+          "spots_left": 5,
+          "total_spots": 10,
+          "first_prize": "₹50K",
+          "winning_percent": 80,
+          "max_entries": 5,
+          "max_pool": "₹3 Lakhs"
+        },
+        {
+          "flexible_prize": true,
+          "prize": "₹5.00 Lakhs",
+          "entry": 100000,
+          "spots_left": 3,
+          "total_spots": 8,
+          "first_prize": "₹1L",
+          "winning_percent": 85,
+          "max_entries": 3,
+          "max_pool": "₹6 Lakhs"
+        },
+        {
+          "flexible_prize": true,
+          "prize": "₹10.00 Lakhs",
+          "entry": 200000,
+          "spots_left": 2,
+          "total_spots": 5,
+          "first_prize": "₹2L",
+          "winning_percent": 90,
+          "max_entries": 2,
+          "max_pool": "₹12 Lakhs"
+        },
+        {
+          "flexible_prize": true,
+          "prize": "₹25.00 Lakhs",
+          "entry": 500000,
+          "spots_left": 1,
+          "total_spots": 3,
+          "first_prize": "₹5L",
+          "winning_percent": 95,
+          "max_entries": 1,
+          "max_pool": "₹30 Lakhs"
+        }
+      ]
+    }
+  ],
+  "floating_actions": [
+    { "icon": "emoji_events", "label": "CONTESTS" },
+    { "icon": "add", "label": "CREATE TEAM" }
+  ]
+} 
