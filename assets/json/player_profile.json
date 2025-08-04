@@ -1,0 +1,133 @@
+{
+  "players": [
+    {
+      "id": 2,
+      "name": "T Beaumont",
+      "team_code": "ENG-W",
+      "team_name": "England Women",
+      "role": "Wicket Keeper",
+      "handedness": "Right Handed",
+      "profile_image": "https://media.gettyimages.com/id/2218733284/photo/leicester-england-tammy-beaumont-of-england-during-the-2nd-womens-metro-bank-odi-between.jpg?s=612x612&w=gi&k=20&c=FkjiwmLLZeRlKy1ZtK7_UQeAIRBPDUw8qb_rklqoagc=",
+      "time_left": "33h left",
+      "stats": {
+        "avg_total_points": 53.2,
+        "avg_selection": 60.4,
+        "status": "Played Last Match"
+      },
+      "featured": {
+        "featured_in_ultimate_team": 6,
+        "last_n_matches": 10
+      },
+      "recent_matches": [
+        {
+          "series": "India Women in England",
+          "matches": [
+            {
+              "match_code": "ENG-W vs IND-W",
+              "date": "1, Jul 25",
+              "total_points": 108,
+              "points_breakup": [
+                {"action": "Four Bonus", "points": 32.0},
+                {"action": "50 Runs bonus", "points": 8.0},
+                {"action": "Six Bonus", "points": 6.0},
+                {"action": "SR", "points": 4.0},
+                {"action": "Runs", "points": 54.0},
+                {"action": "Playing 11", "points": 4.0}
+              ]
+            },
+            {
+              "match_code": "ENG-W vs IND-W",
+              "date": "28, Jun 25",
+              "total_points": 18,
+              "points_breakup": [
+                {"action": "Four Bonus", "points": 4.0},
+                {"action": "Runs", "points": 10.0},
+                {"action": "Playing 11", "points": 4.0}
+              ]
+            }
+          ]
+        },
+        {
+          "series": "England Women in Ireland",
+          "matches": [
+            {
+              "match_code": "IRE-W vs ENG-W",
+              "date": "15, Sep 24",
+              "total_points": 55,
+              "points_breakup": [
+                {"action": "30 Runs bonus", "points": 4.0},
+                {"action": "Four Bonus", "points": 7.0},
+                {"action": "Runs", "points": 40.0},
+                {"action": "Playing 11", "points": 4.0}
+              ]
+            },
+            {
+              "match_code": "IRE-W vs ENG-W",
+              "date": "14, Sep 24",
+              "total_points": 35,
+              "points_breakup": [
+                {"action": "Four Bonus", "points": 2.0},
+                {"action": "Six Bonus", "points": 2.0},
+                {"action": "Runs", "points": 27.0},
+                {"action": "Playing 11", "points": 4.0}
+              ]
+            }
+          ]
+        },
+        {
+          "series": "England Women in New Zealand",
+          "matches": [
+            {
+              "match_code": "NZ-W vs ENG-W",
+              "date": "24, Mar 24",
+              "total_points": 50,
+              "points_breakup": [
+                {"action": "30 Runs bonus", "points": 4.0},
+                {"action": "Four Bonus", "points": 5.0},
+                {"action": "Runs", "points": 37.0},
+                {"action": "Playing 11", "points": 4.0}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Amy Jones",
+      "team_code": "ENG-W",
+      "team_name": "England Women",
+      "role": "Wicket Keeper",
+      "handedness": "Right Handed",
+      "profile_image": "https://static-files.cricket-australia.pulselive.com/headshots/440/409-camedia.png",
+      "time_left": "33h left",
+      "stats": {
+        "avg_total_points": 45.1,
+        "avg_selection": 40.2,
+        "status": "Played Last Match"
+      },
+      "featured": {
+        "featured_in_ultimate_team": 3,
+        "last_n_matches": 10
+      },
+      "recent_matches": [
+        {
+          "series": "India Women in England",
+          "matches": [
+            {
+              "match_code": "ENG-W vs IND-W",
+              "date": "1, Jul 25",
+              "total_points": 69,
+              "points_breakup": [
+                {"action": "Four Bonus", "points": 12.0},
+                {"action": "Six Bonus", "points": 6.0},
+                {"action": "Runs", "points": 47.0},
+                {"action": "Playing 11", "points": 4.0}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+} 
