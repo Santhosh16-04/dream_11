@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "781934813010",
+    "project_id": "clever11",
+    "storage_bucket": "clever11.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:781934813010:android:c3c8414de0f8d3f359e48b",
+        "android_client_info": {
+          "package_name": "com.example.clever_11"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpxK-QVv4f5VZ16IhdD_C48ae219LQbsI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
