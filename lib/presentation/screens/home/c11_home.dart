@@ -94,7 +94,10 @@ class _M11_HomeState extends State<M11_Home> {
   }
 
   void _onItemTapped(int index) {
-    if (index == 2) {
+    if (index == 1) {
+      // Navigate to My Matches screen
+      Navigator.pushNamed(context, '/my_matches');
+    } else if (index == 2) {
       // Navigate to profile screen with personal data
       final personalData = _homeTemplates
           .firstWhere((t) => t['type'] == 'personal_data', orElse: () => {});
@@ -568,19 +571,19 @@ class _M11_HomeState extends State<M11_Home> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                          team1Logo.isNotEmpty
-                              ? ClipOval(
-                                  child: NetworkImageWithLoader(
-                                    imageUrl: team1Logo,
-                                    width: 32,
-                                    height: 32,
-                                    backgroundColor: Colors.grey[200],
-                                  ),
-                                )
-                              : CircleAvatar(
+                        team1Logo.isNotEmpty
+                            ? ClipOval(
+                                child: NetworkImageWithLoader(
+                                  imageUrl: team1Logo,
+                                  width: 32,
+                                  height: 32,
                                   backgroundColor: Colors.grey[200],
-                                  radius: 16,
                                 ),
+                              )
+                            : CircleAvatar(
+                                backgroundColor: Colors.grey[200],
+                                radius: 16,
+                              ),
                         SizedBox(width: 8),
                         Text(team1Code,
                             style: TextStyle(
@@ -1206,7 +1209,8 @@ class _M11_HomeState extends State<M11_Home> {
                                   width: 56,
                                   height: 56,
                                   color: Colors.white,
-                                  child: Icon(Icons.person, size: 28, color: Colors.grey),
+                                  child: Icon(Icons.person,
+                                      size: 28, color: Colors.grey),
                                 ),
                         ),
                       ),
@@ -1366,8 +1370,8 @@ class _M11_HomeState extends State<M11_Home> {
                                       )
                                     : null,
                                 title: Text(groupMenus[i]['title'] ?? '',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w500)),
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w500)),
                                 onTap: () {},
                                 contentPadding: EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 0),

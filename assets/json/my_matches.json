@@ -1,0 +1,284 @@
+{
+  "matches": [
+    {
+      "id": 1,
+      "sport": "Cricket",
+      "match_type": "T10",
+      "league": "ECS T10 England",
+      "status": "Upcoming",
+      "team1": {
+        "name": "CFS Pinnacle Pro",
+        "short_name": "CFS",
+        "full_name": "CFS Pinnacle Pro"
+      },
+      "team2": {
+        "name": "Wimbledon",
+        "short_name": "WIM",
+        "full_name": "Wimbledon"
+      },
+      "date": "Today",
+      "time": "8:30 PM",
+      "time_left": "1h : 23m",
+      "lineups_out": true,
+      "user_teams": 1,
+      "user_contests": 1,
+      "winnings": null
+    },
+    {
+      "id": 2,
+      "sport": "Cricket",
+      "match_type": "T20",
+      "league": "West Indies vs Pakistan T20I",
+      "status": "Completed",
+      "team1": {
+        "name": "West Indies",
+        "short_name": "WI",
+        "full_name": "West Indies"
+      },
+      "team2": {
+        "name": "Pakistan",
+        "short_name": "PAK",
+        "full_name": "Pakistan"
+      },
+      "date": "3 Aug",
+      "time": "5:32 AM",
+      "result": "WI won by 5 wickets",
+      "user_teams": 1,
+      "user_contests": 2,
+      "winnings": 88
+    },
+    {
+      "id": 3,
+      "sport": "Cricket",
+      "match_type": "T10",
+      "league": "ECS T10 England",
+      "status": "Completed",
+      "team1": {
+        "name": "Weybridge",
+        "short_name": "WEY",
+        "full_name": "Weybridge"
+      },
+      "team2": {
+        "name": "Twickenham",
+        "short_name": "TWI",
+        "full_name": "Twickenham"
+      },
+      "date": "30 Jul",
+      "time": "8:50 PM",
+      "result": "WEY won by 3 wickets",
+      "user_teams": 2,
+      "user_contests": 0,
+      "winnings": null
+    },
+    {
+      "id": 4,
+      "sport": "Cricket",
+      "match_type": "T10",
+      "league": "ECS T10 England",
+      "status": "Completed",
+      "team1": {
+        "name": "Spencer",
+        "short_name": "SPE",
+        "full_name": "Spencer"
+      },
+      "team2": {
+        "name": "East Molesey",
+        "short_name": "EM",
+        "full_name": "East Molesey"
+      },
+      "date": "28 Jul",
+      "time": "8:47 PM",
+      "result": "SPE won by 7 wickets",
+      "user_teams": 1,
+      "user_contests": 1,
+      "winnings": 10
+    },
+    {
+      "id": 5,
+      "sport": "Cricket",
+      "match_type": "T20",
+      "league": "World Championship of Legends T20",
+      "status": "Completed",
+      "team1": {
+        "name": "India Legends",
+        "short_name": "IND",
+        "full_name": "India Legends"
+      },
+      "team2": {
+        "name": "Australia Legends",
+        "short_name": "AUS",
+        "full_name": "Australia Legends"
+      },
+      "date": "27 Jul",
+      "time": "7:30 PM",
+      "result": "IND won by 6 wickets",
+      "user_teams": 1,
+      "user_contests": 3,
+      "winnings": 150
+    },
+    {
+      "id": 6,
+      "sport": "Cricket",
+      "match_type": "T20",
+      "league": "IPL 2024",
+      "status": "Live",
+      "team1": {
+        "name": "Mumbai Indians",
+        "short_name": "MI",
+        "full_name": "Mumbai Indians"
+      },
+      "team2": {
+        "name": "Chennai Super Kings",
+        "short_name": "CSK",
+        "full_name": "Chennai Super Kings"
+      },
+      "date": "Today",
+      "time": "7:30 PM",
+      "score": "MI 145/6 (18.2)",
+      "user_teams": 2,
+      "user_contests": 5,
+      "winnings": null
+    },
+    {
+      "id": 7,
+      "sport": "Football",
+      "match_type": "Premier League",
+      "league": "English Premier League",
+      "status": "Upcoming",
+      "team1": {
+        "name": "Manchester United",
+        "short_name": "MUN",
+        "full_name": "Manchester United"
+      },
+      "team2": {
+        "name": "Liverpool",
+        "short_name": "LIV",
+        "full_name": "Liverpool"
+      },
+      "date": "Tomorrow",
+      "time": "10:00 PM",
+      "time_left": "1d : 2h",
+      "lineups_out": false,
+      "user_teams": 1,
+      "user_contests": 2,
+      "winnings": null
+    },
+    {
+      "id": 8,
+      "sport": "Basketball",
+      "match_type": "NBA",
+      "league": "National Basketball Association",
+      "status": "Upcoming",
+      "team1": {
+        "name": "Los Angeles Lakers",
+        "short_name": "LAL",
+        "full_name": "Los Angeles Lakers"
+      },
+      "team2": {
+        "name": "Golden State Warriors",
+        "short_name": "GSW",
+        "full_name": "Golden State Warriors"
+      },
+      "date": "Tomorrow",
+      "time": "6:30 AM",
+      "time_left": "23h : 30m",
+      "lineups_out": true,
+      "user_teams": 1,
+      "user_contests": 1,
+      "winnings": null
+    },
+    {
+      "id": 9,
+      "sport": "Cricket",
+      "match_type": "T20",
+      "league": "Big Bash League",
+      "status": "Completed",
+      "team1": {
+        "name": "Sydney Sixers",
+        "short_name": "SYS",
+        "full_name": "Sydney Sixers"
+      },
+      "team2": {
+        "name": "Melbourne Stars",
+        "short_name": "MEL",
+        "full_name": "Melbourne Stars"
+      },
+      "date": "25 Jul",
+      "time": "2:00 PM",
+      "result": "SYS won by 4 wickets",
+      "user_teams": 1,
+      "user_contests": 1,
+      "winnings": 25
+    },
+    {
+      "id": 10,
+      "sport": "Cricket",
+      "match_type": "ODI",
+      "league": "ICC World Cup",
+      "status": "Completed",
+      "team1": {
+        "name": "India",
+        "short_name": "IND",
+        "full_name": "India"
+      },
+      "team2": {
+        "name": "England",
+        "short_name": "ENG",
+        "full_name": "England"
+      },
+      "date": "24 Jul",
+      "time": "3:00 PM",
+      "result": "IND won by 8 wickets",
+      "user_teams": 3,
+      "user_contests": 8,
+      "winnings": 320
+    },
+    {
+      "id": 11,
+      "sport": "Football",
+      "match_type": "Champions League",
+      "league": "UEFA Champions League",
+      "status": "Live",
+      "team1": {
+        "name": "Real Madrid",
+        "short_name": "RMA",
+        "full_name": "Real Madrid"
+      },
+      "team2": {
+        "name": "Bayern Munich",
+        "short_name": "BAY",
+        "full_name": "Bayern Munich"
+      },
+      "date": "Today",
+      "time": "11:30 PM",
+      "score": "RMA 2 - 1 BAY (65')",
+      "user_teams": 1,
+      "user_contests": 2,
+      "winnings": null
+    },
+    {
+      "id": 12,
+      "sport": "Tennis",
+      "match_type": "Grand Slam",
+      "league": "Wimbledon",
+      "status": "Upcoming",
+      "team1": {
+        "name": "Novak Djokovic",
+        "short_name": "DJK",
+        "full_name": "Novak Djokovic"
+      },
+      "team2": {
+        "name": "Carlos Alcaraz",
+        "short_name": "ALC",
+        "full_name": "Carlos Alcaraz"
+      },
+      "date": "Tomorrow",
+      "time": "4:00 PM",
+      "time_left": "20h : 30m",
+      "lineups_out": true,
+      "user_teams": 1,
+      "user_contests": 1,
+      "winnings": null
+    }
+  ]
+} 
