@@ -54,9 +54,9 @@ class _M11_HomeState extends State<M11_Home> {
     final autoPlay = options['autoPlay']?.toString().toLowerCase() == 'true';
     final interval = _parseInt(options['autoPlayInterval'] ?? '3');
 
-    if (autoPlay && interval > 0) { 
+    if (autoPlay && interval > 0) {
       _autoPlayTimer?.cancel();
-      _autoPlayTimer = Timer.periodic(Duration(seconds: interval), (timer) { 
+      _autoPlayTimer = Timer.periodic(Duration(seconds: interval), (timer) {
         if (_sliderController != null && _sliderController!.hasClients) {
           final currentPage = _sliderController!.page?.round() ?? 0;
           final nextPage = (currentPage + 1) %
@@ -152,7 +152,8 @@ class _M11_HomeState extends State<M11_Home> {
                   'contestId': 'wallet_add_cash',
                   'contestData': {
                     'title': 'Add Cash to Wallet',
-                    'description': 'Add money to your wallet for contest participation',
+                    'description':
+                        'Add money to your wallet for contest participation',
                     'amount': '0',
                   },
                 },
@@ -232,7 +233,9 @@ class _M11_HomeState extends State<M11_Home> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => ContestDetailsScreen(initialTabIndex: 0)),
+              MaterialPageRoute(
+                  builder: (context) =>
+                      ContestDetailsScreen(initialTabIndex: 0)),
             );
           },
           child: _buildMatchCard(
@@ -906,13 +909,161 @@ class _M11_HomeState extends State<M11_Home> {
                     ]
                   ],
                 ),
-                Icon(Icons.notifications_none_outlined,
-                    color: Colors.grey[600]),
+                GestureDetector(
+                  onTap: () => _showReminderBottomSheet(context),
+                  child: Icon(Icons.notifications_none_outlined,
+                      color: Colors.grey[600]),
+                ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  void _showReminderBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Close button top-left
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              height: 10.0,
+                            ),
+                            Text(
+                              'Set Reminders',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Lineup Announcement (if available)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.close,
+                              size: 30.0,
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Divider(),
+
+            // Switch Row 1
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Match - WIM vs WEY',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  Transform.scale(
+                    scale: 0.8,
+                    // Smaller switch
+                    child: Switch(
+                      value: false,
+                      onChanged: (val) {},
+                      inactiveTrackColor: Colors.grey.shade300,
+                      inactiveThumbColor: Colors.white,
+                      activeColor: Colors.white,
+                      activeTrackColor: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Divider(),
+            // Switch Row 2
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'ECS T10 England',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      SizedBox(width: 8),
+                      Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Tour',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Transform.scale(
+                    scale: 0.8, // Smaller switch
+                    child: Switch(
+                      value: false,
+                      onChanged: (val) {},
+                      inactiveTrackColor: Colors.grey.shade300,
+                      inactiveThumbColor: Colors.white,
+                      activeColor: Colors.white,
+                      activeTrackColor: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 10,
+            )
+          ],
+        );
+      },
     );
   }
 
