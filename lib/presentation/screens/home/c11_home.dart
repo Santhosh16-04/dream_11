@@ -1,3 +1,4 @@
+import 'package:clever_11/presentation/notification/firebaseMsg.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
@@ -26,6 +27,8 @@ class _M11_HomeState extends State<M11_Home> {
   int _selectedSpecialCategoryTab = 0;
   String _selectedSpecialCategory = '';
   bool _showSpecialContestRow = false;
+
+  bool matchReminderOn = false;
 
   @override
   void initState() {
@@ -935,7 +938,7 @@ class _M11_HomeState extends State<M11_Home> {
           children: [
             // Close button top-left
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 14.0),
               child: Row(
                 children: [
                   Expanded(
@@ -1000,8 +1003,17 @@ class _M11_HomeState extends State<M11_Home> {
                     scale: 0.8,
                     // Smaller switch
                     child: Switch(
-                      value: false,
-                      onChanged: (val) {},
+                      value: matchReminderOn,
+                      onChanged: (val) {
+                        matchReminderOn = val;
+                        final time = DateTime.now().add(Duration(minutes: 1));
+                        Firebasemsg().scheduleLocalNotification(
+                          title: 'Match Reminder',
+                          body: 'Your match WIM vs WEY is starting now!',
+                          scheduledTime: time,
+                        );
+                        setState(() {});
+                      },
                       inactiveTrackColor: Colors.grey.shade300,
                       inactiveThumbColor: Colors.white,
                       activeColor: Colors.white,

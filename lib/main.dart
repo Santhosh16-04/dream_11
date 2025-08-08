@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:clever_11/routes/m11_routes.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
 import 'cubit/team/team_bloc.dart';
 import 'presentation/blocs/my_contests/my_contests_bloc.dart';
 import 'presentation/blocs/my_contests/my_contests_events.dart';
@@ -12,8 +13,15 @@ import 'presentation/blocs/my_contests/my_contests_events.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Initialize time zones once
+  tz.initializeTimeZones();
 
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Initialize FCM
   await Firebasemsg().initFCM();
 
   runApp(

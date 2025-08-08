@@ -1,5 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:permission_handler/permission_handler.dart';
 
 class Firebasemsg {
   final FirebaseMessaging msgService = FirebaseMessaging.instance;
@@ -7,8 +9,14 @@ class Firebasemsg {
       FlutterLocalNotificationsPlugin();
 
   Future<void> initFCM() async {
+    // Request FCM push permission
     NotificationSettings settings = await msgService.requestPermission();
-    print(' Permission status: ${settings.authorizationStatus}');
+    print('Permission status: ${settings.authorizationStatus}');
+
+    // Request POST_NOTIFICATIONS permission for Android 13+
+    if (await Permission.notification.isDenied) {
+      await Permission.notification.request();
+    }
 
     // Get FCM token
     String? token = await msgService.getToken();
@@ -59,6 +67,46 @@ class Firebasemsg {
         platformDetails,
       );
     }
+  }
+
+  Future<void> scheduleLocalNotification({
+    required String title,
+    required String body,
+    required DateTime scheduledTime,
+  }) async {
+    final androidPlugin =
+        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    final canScheduleExactAlarms =
+        await androidPlugin?.canScheduleExactNotifications() ?? true;
+
+    if (!canScheduleExactAlarms) {
+      await androidPlugin?.requestExactAlarmsPermission();
+    }
+
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'reminder_channel',
+      'Reminders',
+      channelDescription: 'Match reminder notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const NotificationDetails platformDetails = NotificationDetails(
+      android: androidDetails,
+    );
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      0,
+      title,
+      body,
+      tz.TZDateTime.from(scheduledTime, tz.local),
+      platformDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
   }
 }
 
