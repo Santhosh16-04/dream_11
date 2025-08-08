@@ -912,10 +912,19 @@ class _M11_HomeState extends State<M11_Home> {
                     ]
                   ],
                 ),
-                GestureDetector(
-                  onTap: () => _showReminderBottomSheet(context),
-                  child: Icon(Icons.notifications_none_outlined,
-                      color: Colors.grey[600]),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => _showReminderBottomSheet(context),
+                      child: Icon(Icons.notifications_none_outlined,
+                          color: Colors.grey[600]),
+                    ),
+                    SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _testNotification(),
+                      child: Icon(Icons.bug_report, color: Colors.orange),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1005,14 +1014,13 @@ class _M11_HomeState extends State<M11_Home> {
                     child: Switch(
                       value: matchReminderOn,
                       onChanged: (val) {
-                        matchReminderOn = val;
-                        final time = DateTime.now().add(Duration(minutes: 1));
-                        Firebasemsg().scheduleLocalNotification(
-                          title: 'Match Reminder',
-                          body: 'Your match WIM vs WEY is starting now!',
-                          scheduledTime: time,
-                        );
-                        setState(() {});
+                        // Update state immediately for responsive UI
+                        setState(() {
+                          matchReminderOn = val;
+                        });
+
+                        // Handle notification scheduling asynchronously
+                        _handleNotificationToggle(val);
                       },
                       inactiveTrackColor: Colors.grey.shade300,
                       inactiveThumbColor: Colors.white,
@@ -1612,5 +1620,62 @@ class _M11_HomeState extends State<M11_Home> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleNotificationToggle(bool isEnabled) async {
+    try {
+      final notifier = Firebasemsg();
+      if (isEnabled) {
+        // First, show a test notification immediately to verify setup
+        //await notifier.showTestNotification();
+
+        // Then schedule the actual reminder
+        final scheduledAt = DateTime.now().add(const Duration(minutes: 1));
+        await notifier.scheduleLocalNotification(
+          title: 'Match Reminder',
+          body: 'Your match WIM vs WEY is starting now!',
+          scheduledTime: scheduledAt,
+        );
+
+        print('Notification scheduled for: $scheduledAt');
+      } else {
+        await notifier.cancelAllScheduledNotifications();
+      }
+    } catch (e) {
+      // If notification scheduling fails, revert the state
+      setState(() {
+        matchReminderOn = !isEnabled;
+      });
+      print('Notification toggle error: $e');
+
+      // Show a simple error message to the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Failed to ${isEnabled ? 'schedule' : 'cancel'} notification: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _testNotification() async {
+    try {
+      final notifier = Firebasemsg();
+      await notifier.showTestNotification();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Test notification sent!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Test notification failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
