@@ -25,7 +25,8 @@ class _PaymentOptionsState extends State<PaymentOptions> {
         duration: const Duration(seconds: 2),
       ),
     );
-  }
+  }  
+
 
   void _handleAddCard() {
     setState(() {
