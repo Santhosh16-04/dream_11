@@ -919,11 +919,6 @@ class _M11_HomeState extends State<M11_Home> {
                       child: Icon(Icons.notifications_none_outlined,
                           color: Colors.grey[600]),
                     ),
-                    SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () => _testNotification(),
-                      child: Icon(Icons.bug_report, color: Colors.orange),
-                    ),
                   ],
                 ),
               ],
@@ -942,146 +937,153 @@ class _M11_HomeState extends State<M11_Home> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Close button top-left
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Close button top-left
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Stack(
+                          alignment: Alignment.center,
                           children: [
-                            SizedBox(
-                              height: 10.0,
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  height: 10.0,
+                                ),
+                                Text(
+                                  'Set Reminders',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Lineup Announcement (if available)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
-                            Text(
-                              'Set Reminders',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.close,
+                                  size: 30.0,
+                                ),
+                                onPressed: () => Navigator.pop(context),
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Lineup Announcement (if available)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                              textAlign: TextAlign.center,
                             ),
                           ],
-                        ),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: IconButton(
-                            icon: Icon(
-                              Icons.close,
-                              size: 30.0,
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Divider(),
-
-            // Switch Row 1
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Match - WIM vs WEY',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  Transform.scale(
-                    scale: 0.8,
-                    // Smaller switch
-                    child: Switch(
-                      value: matchReminderOn,
-                      onChanged: (val) {
-                        // Update state immediately for responsive UI
-                        setState(() {
-                          matchReminderOn = val;
-                        });
-
-                        // Handle notification scheduling asynchronously
-                        _handleNotificationToggle(val);
-                      },
-                      inactiveTrackColor: Colors.grey.shade300,
-                      inactiveThumbColor: Colors.white,
-                      activeColor: Colors.white,
-                      activeTrackColor: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Divider(),
-            // Switch Row 2
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'ECS T10 England',
-                        style: TextStyle(fontSize: 14),
-                      ),
-                      SizedBox(width: 8),
-                      Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'Tour',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
-                          ),
                         ),
                       ),
                     ],
                   ),
-                  Transform.scale(
-                    scale: 0.8, // Smaller switch
-                    child: Switch(
-                      value: false,
-                      onChanged: (val) {},
-                      inactiveTrackColor: Colors.grey.shade300,
-                      inactiveThumbColor: Colors.white,
-                      activeColor: Colors.white,
-                      activeTrackColor: Colors.green,
-                    ),
+                ),
+
+                Divider(),
+
+                // Switch Row 1
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Match - WIM vs WEY',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      Transform.scale(
+                        scale: 0.8,
+                        // Smaller switch
+                        child: Switch(
+                          value: matchReminderOn,
+                          onChanged: (val) {
+                            // Update bottom sheet UI immediately
+                            setModalState(() {
+                              matchReminderOn = val;
+                            });
+                            // Keep parent state in sync
+
+                            // Handle notification scheduling asynchronously
+                            _handleNotificationToggle(val);
+
+                            Navigator.pop(context);
+                          },
+                          inactiveTrackColor: Colors.grey.shade300,
+                          inactiveThumbColor: Colors.white,
+                          activeColor: Colors.white,
+                          activeTrackColor: Colors.green,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 10,
-            )
-          ],
+                ),
+
+                Divider(),
+                // Switch Row 2
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'ECS T10 England',
+                            style: TextStyle(fontSize: 14),
+                          ),
+                          SizedBox(width: 8),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'Tour',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Transform.scale(
+                        scale: 0.8, // Smaller switch
+                        child: Switch(
+                          value: false,
+                          onChanged: (val) {},
+                          inactiveTrackColor: Colors.grey.shade300,
+                          inactiveThumbColor: Colors.white,
+                          activeColor: Colors.white,
+                          activeTrackColor: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  height: 10,
+                )
+              ],
+            );
+          },
         );
       },
     );
@@ -1627,7 +1629,7 @@ class _M11_HomeState extends State<M11_Home> {
       final notifier = Firebasemsg();
       if (isEnabled) {
         // First, show a test notification immediately to verify setup
-        //await notifier.showTestNotification();
+        await notifier.showTestNotification();
 
         // Then schedule the actual reminder
         final scheduledAt = DateTime.now().add(const Duration(minutes: 1));
