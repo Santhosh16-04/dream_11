@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class PreviewTeamScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'backup_screen.dart';
+
+class PreviewTeamScreen extends StatefulWidget {
   final List<Map<String, dynamic>> selectedPlayers;
   final double creditsLeft;
   final String team1;
   final String team2;
   final int team1Count;
   final int team2Count;
+  final List<Map<String, dynamic>> benchPlayers;
+  final bool showBenchAction;
+  final IconData benchActionIcon;
+  final VoidCallback? onBenchAction;
 
   const PreviewTeamScreen({
     Key? key,
@@ -17,15 +25,26 @@ class PreviewTeamScreen extends StatelessWidget {
     required this.team2,
     required this.team1Count,
     required this.team2Count,
+    this.benchPlayers = const [],
+    this.showBenchAction = true,
+    this.benchActionIcon = Icons.info_outline,
+    this.onBenchAction,
   }) : super(key: key);
+
+  @override
+  State<PreviewTeamScreen> createState() => _PreviewTeamScreenState();
+}
+
+class _PreviewTeamScreenState extends State<PreviewTeamScreen> {
+  int? _selectedBenchIndex;
 
   @override
   Widget build(BuildContext context) {
     final totalPlayers = 11;
-    final wk = selectedPlayers.where((p) => p['role'] == 'WK').toList();
-    final bat = selectedPlayers.where((p) => p['role'] == 'BAT').toList();
-    final ar = selectedPlayers.where((p) => p['role'] == 'AR').toList();
-    final bowl = selectedPlayers.where((p) => p['role'] == 'BOWL').toList();
+    final wk = widget.selectedPlayers.where((p) => p['role'] == 'WK').toList();
+    final bat = widget.selectedPlayers.where((p) => p['role'] == 'BAT').toList();
+    final ar = widget.selectedPlayers.where((p) => p['role'] == 'AR').toList();
+    final bowl = widget.selectedPlayers.where((p) => p['role'] == 'BOWL').toList();
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.black, // ✅ Black background for status bar
@@ -84,7 +103,7 @@ class PreviewTeamScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Players\n${selectedPlayers.length}/$totalPlayers',
+                                'Players\n${widget.selectedPlayers.length}/$totalPlayers',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -100,19 +119,19 @@ class PreviewTeamScreen extends StatelessWidget {
                                 ),
                                 child: Row(
                                   children: [
-                                    Text(team1,
+                                    Text(widget.team1,
                                         style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 13)),
                                     SizedBox(width: 6),
-                                    Text('$team1Count : $team2Count',
+                                    Text('${widget.team1Count} : ${widget.team2Count}',
                                         style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 15)),
                                     SizedBox(width: 6),
-                                    Text(team2,
+                                    Text(widget.team2,
                                         style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
@@ -121,7 +140,7 @@ class PreviewTeamScreen extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                'Credits Left\n${creditsLeft.toStringAsFixed(1)}',
+                                'Credits Left\n${widget.creditsLeft.toStringAsFixed(1)}',
                                 textAlign: TextAlign.right,
                                 style: TextStyle(
                                   color: Colors.white,
@@ -141,7 +160,7 @@ class PreviewTeamScreen extends StatelessWidget {
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(
                           vertical: 12, horizontal: 8),
-                      child: selectedPlayers.isEmpty
+                      child: widget.selectedPlayers.isEmpty
                           ? Center(
                               child: Container(
                                 padding: EdgeInsets.all(24),
@@ -193,6 +212,7 @@ class PreviewTeamScreen extends StatelessWidget {
           ),
         ],
       ),
+      bottomNavigationBar: _buildBottomBenchBar(),
     );
   }
 
@@ -253,6 +273,286 @@ class PreviewTeamScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // Bottom horizontal bench-style bar (B1, B2, ...)
+  Widget _buildBottomBenchBar() {
+    final List<Map<String, dynamic>> displayList =
+        widget.benchPlayers.isNotEmpty ? widget.benchPlayers : widget.selectedPlayers.take(4).toList();
+
+    if (displayList.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    String _shortName(String fullName) {
+      if (fullName.isEmpty) return '';
+      final parts = fullName.split(' ');
+      if (parts.length == 1) return parts.first;
+      final first = parts.first.isNotEmpty ? parts.first[0] : '';
+      final last = parts.last;
+      return '$first $last';
+    }
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.65),
+          border: const Border(top: BorderSide(color: Colors.white24, width: 0.5)),
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              if (widget.showBenchAction)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: InkWell(
+                    onTap: widget.onBenchAction ?? _openBackupsScreen,
+                    borderRadius: BorderRadius.circular(20),
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        widget.benchActionIcon,
+                        size: 18,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ),
+              ...List.generate(displayList.length, (index) {
+              final p = displayList[index];
+              final tag = 'B${index + 1}';
+              final bool isSelected = _selectedBenchIndex == index;
+              return InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  setState(() {
+                    _selectedBenchIndex = index;
+                  });
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.black : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: isSelected ? Colors.white54 : Colors.black12),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          tag,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundImage: AssetImage(p['image']),
+                        backgroundColor: Colors.grey[700],
+                      ),
+                      const SizedBox(width: 6),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 120),
+                        child: Text(
+                          _shortName(p['name'] ?? ''),
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : Colors.black,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openBackupsScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const BackUpScreen(),
+      ),
+    );
+  }
+
+  // Legacy bottom sheet kept for reference (unused)
+  void _showBackupsSheet() {
+    final List<Map<String, dynamic>> displayList =
+        widget.benchPlayers.isNotEmpty ? widget.benchPlayers : widget.selectedPlayers.take(4).toList();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black.withOpacity(0.9),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.info_outline, color: Colors.white70, size: 18),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Backups',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => Navigator.pop(ctx),
+                          child: const Icon(Icons.keyboard_arrow_down, color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: List.generate(displayList.length, (index) {
+                          final p = displayList[index];
+                          final tag = 'B${index + 1}';
+                          final bool isSelected = _selectedBenchIndex == index;
+                          String shortRole = (p['role'] ?? '').toString();
+                          if (shortRole == 'ALL') shortRole = 'AR';
+
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              setState(() {
+                                _selectedBenchIndex = index;
+                              });
+                              setModalState(() {});
+                            },
+                            child: Container(
+                              width: 130,
+                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: isSelected ? Colors.black : Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected ? Colors.white54 : Colors.black12,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: isSelected ? Colors.white : Colors.black,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          shortRole,
+                                          style: TextStyle(
+                                            color: isSelected ? Colors.black : Colors.white,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: isSelected ? Colors.white : Colors.black,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          tag,
+                                          style: TextStyle(
+                                            color: isSelected ? Colors.black : Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 16,
+                                        backgroundImage: AssetImage(p['image']),
+                                        backgroundColor: Colors.grey[700],
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          (p['name'] ?? '').toString(),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: isSelected ? Colors.white : Colors.black,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${p['credits']} Cr',
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white70 : Colors.black87,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

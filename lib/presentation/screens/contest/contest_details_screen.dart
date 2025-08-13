@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import 'package:clever_11/presentation/screens/contest/create_team_screen.dart';
 import 'package:clever_11/routes/m11_routes.dart';
+import 'package:clever_11/presentation/screens/contest/create_team_screen.dart';
 import 'package:clever_11/presentation/screens/contest/contest_full_view_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../cubit/team/team_bloc.dart';
@@ -12,7 +12,7 @@ import 'package:clever_11/presentation/screens/contest/select_team_screen.dart';
 import 'package:clever_11/presentation/blocs/my_contests/my_contests_bloc.dart';
 import 'package:clever_11/presentation/blocs/my_contests/my_contests_states.dart';
 import 'package:clever_11/presentation/blocs/my_contests/my_contests_events.dart';
-import 'package:clever_11/routes/m11_routes.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ContestDetailsScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -77,6 +77,15 @@ class _ContestDetailsScreenState extends State<ContestDetailsScreen>
           initialIndex: widget.initialTabIndex);
       _tabController!.addListener(_onTabChanged);
     });
+
+    // Sync joined contests with MyContestsBloc (deduped by stable id)
+    final myContestsBloc =
+        BlocProvider.of<MyContestsBloc>(context, listen: false);
+    for (var contest in joinedContests) {
+      final contestId = _buildStableContestId(contest);
+      myContestsBloc.add(AddContestToMyContests(contestId, contest));
+    }
+    print('Synced ${joinedContests.length} contests with MyContestsBloc');
   }
 
   void _joinContest(dynamic contest) {
@@ -84,6 +93,475 @@ class _ContestDetailsScreenState extends State<ContestDetailsScreen>
       joinedContests.add(contest);
       print('Contest Joined: ${contest['title']}'); // Debug print
     });
+    // Avoid dispatching here to prevent duplicate entries.
+    // The confirmation flow already updates MyContestsBloc with team mapping.
+  }
+
+  // Add join contest flow method according to flowchart
+  Future<void> _handleJoinContestFlow(dynamic contest, String contestId) async {
+    // Get current team state and augment with persisted teams to avoid first-launch race conditions
+    final teamState = context.read<TeamBloc>().state;
+    List<Map<String, dynamic>> teams = List<Map<String, dynamic>>.from(teamState.teams);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final teamsJson = prefs.getString('saved_teams');
+      if ((teams.isEmpty) && teamsJson != null && teamsJson.isNotEmpty) {
+        final List decoded = json.decode(teamsJson) as List;
+        teams = decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+    } catch (_) {}
+
+    if (teams.isEmpty) {
+      // Definitively no team on device → go to create team
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => M11_CreateTeamScreen(
+            source: 'join_contest',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Check if user has already joined this contest
+    final myContestsBloc = context.read<MyContestsBloc>();
+    final myContestsState = myContestsBloc.state;
+
+    bool hasJoinedThisContest = false;
+    List<String> teamsUsedInContest = [];
+
+    if (myContestsState is MyContestsLoaded) {
+      print('MyContestsState is MyContestsLoaded');
+      print('Contests count: ${myContestsState.contests.length}');
+      // Avoid printing deep state getters here to prevent DevTools lookup errors on hot reload
+
+      // Check if this contest exists in joined contests
+      hasJoinedThisContest = myContestsState.contests.any((c) =>
+          c['id']?.toString() == contestId ||
+          c['prize'] == contest['prize'] && c['entry'] == contest['entry']);
+
+      // Get teams already used in this contest - with safety check
+      final Map<String, List<String>> mappings =
+          myContestsState.contestTeamMappings;
+      teamsUsedInContest = mappings[contestId] ?? [];
+      print('Teams used in contest: $teamsUsedInContest');
+    } else {
+      print(
+          'MyContestsState is not MyContestsLoaded: ${myContestsState.runtimeType}');
+    }
+
+    // Check wallet balance (simulated - you should get this from your wallet service)
+    final walletBalance = 49.0; // This should come from your wallet service
+    final contestEntryFee =
+        double.tryParse(contest['entry']?.toString() ?? '0') ?? 0.0;
+
+    // Debug information
+    print('Join Contest Flow Debug:');
+    print('Teams count: ${teams.length}');
+    print('Wallet balance: $walletBalance');
+    print('Contest entry fee: $contestEntryFee');
+    print('Contest data: ${contest.toString()}');
+    print('Has joined this contest: $hasJoinedThisContest');
+    print('Teams used in contest: $teamsUsedInContest');
+
+    // Flowchart Logic Implementation
+
+    // Condition 1: Check if team exists
+    if (teams.isEmpty) {
+      print('Flow: No teams exist - Going to Create Team Screen');
+      // No team exists - Go to Create Team Screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => M11_CreateTeamScreen(
+            source: 'join_contest',
+          ),
+        ),
+      );
+    } else if (teams.length == 1) {
+      print(
+          'Flow: Single team exists - Checking if already used in this contest');
+
+      final singleTeamId = teams.first['id'].toString();
+
+      // Check if user has already joined this contest
+      if (hasJoinedThisContest) {
+        // User has already joined this contest
+        if (teamsUsedInContest.contains(singleTeamId)) {
+          print('Flow: Same contest, same team - Going to Create Team Screen');
+          // Same contest, same team - Go to Create Team Screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => M11_CreateTeamScreen(
+                source: 'join_contest',
+              ),
+            ),
+          );
+        } else {
+          print(
+              'Flow: Same contest, different team - Going to Create Team Screen');
+          // Same contest, different team - Go to Create Team Screen (since only one team)
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => M11_CreateTeamScreen(
+                source: 'join_contest',
+              ),
+            ),
+          );
+        }
+      } else {
+        // User hasn't joined this contest before - Show normal flow
+        print('Flow: Single team exists - Checking wallet balance');
+        // Single team exists - Check wallet balance
+        if (walletBalance >= contestEntryFee) {
+          print('Flow: Sufficient balance - Opening confirmation bottom sheet');
+          // Wallet has sufficient balance - Show confirmation bottom sheet
+          _showJoinContestConfirmation(contest, contestId);
+        } else {
+          print('Flow: Insufficient balance - Going to Payment Screen');
+          // Insufficient balance - Go to Payment Screen
+          Navigator.pushNamed(
+            context,
+            M11_AppRoutes.c11_main_payment,
+            arguments: {
+              'contestId': contestId,
+              'contestData': contest,
+            },
+          );
+        }
+      }
+    } else {
+      print(
+          'Flow: Multiple teams exist - Checking if already joined this contest');
+
+      // Check if user has already joined this contest
+      if (hasJoinedThisContest) {
+        // User has already joined this contest - Go to Select Team Screen
+        print(
+            'Flow: Same contest, multiple teams - Going to Select Team Screen');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SelectTeamScreen(
+              timeLeftMinutes: 109,
+              maxTeams: 20,
+              contestData: contest,
+              contestId: contestId,
+              teamsUsedInContest: teamsUsedInContest, // Pass teams already used
+            ),
+          ),
+        );
+      } else {
+        // User hasn't joined this contest before - Show normal flow
+        print('Flow: Multiple teams exist - Going to Select Team Screen');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SelectTeamScreen(
+              timeLeftMinutes: 109,
+              maxTeams: 20,
+              contestData: contest,
+              contestId: contestId,
+              teamsUsedInContest: teamsUsedInContest, // Pass teams already used
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  // Show join contest confirmation bottom sheet
+  void _showJoinContestConfirmation(dynamic contest, String contestId) {
+    final originalEntry = double.tryParse(
+            contest['original_entry']?.toString() ??
+                contest['entry']?.toString() ??
+                '0') ??
+        0.0;
+    final discountedEntry = double.tryParse(
+            contest['discounted_entry']?.toString() ??
+                contest['entry']?.toString() ??
+                '0') ??
+        0.0;
+    final discountAmount = originalEntry - discountedEntry;
+    final finalAmount = discountedEntry;
+    final walletBalance = 49.0; // This should come from your wallet service
+    final unutilisedAmount = walletBalance - finalAmount;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.5,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.close, color: Colors.grey[600]),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Confirmation',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            'Amount Unutilised + Winnings = ₹${unutilisedAmount.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Scrollable content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Column(
+                  children: [
+                    // Entry Card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Entry ',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            '₹${originalEntry.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Discount Pass Card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.green[100],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.discount,
+                                  color: Colors.green[700],
+                                  size: 14,
+                                ),
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'Discount Pass',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '- ₹${discountAmount.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // To Pay Card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'To Pay',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            '₹${finalAmount.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Terms and Conditions
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Text(
+                    'I agree with the standard ',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  Text(
+                    'T&Cs',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Fixed Join Contest Button
+            SafeArea(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+
+                      // Get the single team and add it to contest-team mapping
+                      final teamState = context.read<TeamBloc>().state;
+                      if (teamState.teams.isNotEmpty) {
+                        final teamId = teamState.teams.first['id'].toString();
+                        final myContestsBloc = context.read<MyContestsBloc>();
+                        // Use stable contest id to avoid duplicates in My Contests
+                        final stableId = _buildStableContestId(contest, fallbackId: contestId);
+                        myContestsBloc.add(AddContestToMyContests(
+                          stableId,
+                          contest,
+                          teamId: teamId,
+                        ));
+                      }
+
+                      _joinContest(contest);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Contest joined successfully!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+
+                      setState(() {});
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF009905),
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'JOIN CONTEST',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Get contest list for the match
+  List<dynamic> _getContestListForMatch(dynamic selectedContest) {
+    // This should return contests from your data structure
+    // For now, using the contests from the loaded data
+    if (data != null && data!['contests'] != null) {
+      return data!['contests'] as List<dynamic>;
+    }
+    // Fallback: return the selected contest as a list
+    return [selectedContest];
+  }
+
+  // Build a stable contestId from key fields to avoid duplicates in My Contests
+  String _buildStableContestId(dynamic contest, {String? fallbackId}) {
+    try {
+      final id = contest['id']?.toString();
+      if (id != null && id.isNotEmpty) return id;
+      final prize = contest['prize']?.toString() ?? '';
+      final entry = contest['entry']?.toString() ??
+          contest['discounted_entry']?.toString() ?? '';
+      final spots = contest['spots_left']?.toString() ??
+          contest['total_spots']?.toString() ?? '';
+      final seed = '${prize}_${entry}_${spots}'.trim();
+      if (seed.isNotEmpty) return seed;
+      return fallbackId ?? DateTime.now().millisecondsSinceEpoch.toString();
+    } catch (_) {
+      return fallbackId ?? DateTime.now().millisecondsSinceEpoch.toString();
+    }
   }
 
   @override
@@ -476,6 +954,8 @@ class _ContestDetailsScreenState extends State<ContestDetailsScreen>
                                                                 InkWell(
                                                                   onTap: () {
                                                                     // Create a unique contest ID based on contest properties
+                                                                    print(
+                                                                        "CLICKED FOR JOIN CONTEST");  
                                                                     final contestId =
                                                                         '${contest['prize'] ?? 'contest'}_${contest['entry'] ?? contest['discounted_entry'] ?? '0'}_${contest['spots_left'] ?? '0'}';
 
@@ -489,61 +969,13 @@ class _ContestDetailsScreenState extends State<ContestDetailsScreen>
                                                                         match['balance'] ??
                                                                             0;
 
-                                                                    // Check if user has sufficient balance
-                                                                    if (userBalance >=
-                                                                        entryAmount) {
-                                                                      // User has sufficient balance, proceed with contest joining
-                                                                      final teamState = context
-                                                                          .read<
-                                                                              TeamBloc>()
-                                                                          .state;
-                                                                      if (teamState
-                                                                              .teams
-                                                                              .length ==
-                                                                          1) {
-                                                                        // If only one team, join contest directly
-                                                                        _joinContest(
-                                                                            contest);
-                                                                        ScaffoldMessenger.of(context)
-                                                                            .showSnackBar(
-                                                                          SnackBar(
-                                                                            content:
-                                                                                Text('Contest joined successfully!'),
-                                                                            backgroundColor:
-                                                                                Colors.green,
-                                                                          ),
-                                                                        );
-                                                                      } else {
-                                                                        // If multiple teams, go to select team screen
-                                                                        Navigator
-                                                                            .push(
-                                                                          context,
-                                                                          MaterialPageRoute(
-                                                                            builder: (context) =>
-                                                                                SelectTeamScreen(
-                                                                              timeLeftMinutes: 109,
-                                                                              maxTeams: 20,
-                                                                              contestData: contest,
-                                                                              contestId: contestId,
-                                                                            ),
-                                                                          ),
-                                                                        );
-                                                                      }
-                                                                    } else {
-                                                                      // Insufficient balance, navigate to payment screen
-                                                                      Navigator
-                                                                          .pushNamed(
-                                                                        context,
-                                                                        M11_AppRoutes
-                                                                            .c11_main_payment,
-                                                                        arguments: {
-                                                                          'contestId':
-                                                                              contestId,
-                                                                          'contestData':
-                                                                              contest,
-                                                                        },
-                                                                      );
-                                                                    }
+                                                                    print(
+                                                                        'USER BALANCE == ${userBalance}');
+
+                                                                    // Implement join contest flow according to flowchart
+                                                                    _handleJoinContestFlow(
+                                                                        contest,
+                                                                        contestId);
                                                                   },
                                                                   child:
                                                                       Container(
@@ -740,6 +1172,12 @@ class _ContestDetailsScreenState extends State<ContestDetailsScreen>
                       //Tab 1 : My Contests
                       BlocBuilder<MyContestsBloc, MyContestsState>(
                         builder: (context, state) {
+                          print('MyContestsBloc State: ${state.runtimeType}');
+                          if (state is MyContestsLoaded) {
+                            print(
+                                'MyContestsBloc Contests Count: ${state.contests.length}');
+                          }
+
                           if (state is MyContestsInitial) {
                             return Center(
                               child: Column(
@@ -899,403 +1337,75 @@ class _ContestDetailsScreenState extends State<ContestDetailsScreen>
 
                       // Tab 2: Teams
                       BlocBuilder<TeamBloc, TeamState>(
-                        builder: (context, state) {
-                          if (state.teams.isEmpty) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    "You haven't created a team yet!",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    "The first step to winning starts here.",
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey[700],
-                                    ),
-                                  ),
-                                  SizedBox(height: 32),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Color(0XFF00A203), // Green color
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: TextButton.icon(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                M11_CreateTeamScreen(
-                                              source:
-                                                  'teams_tab', // Indicate source is teams tab
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      icon: Icon(Icons.add_circle,
-                                          color: Colors.white, size: 20),
-                                      label: Text(
-                                        "CREATE A TEAM",
+                        builder: (context, teamState) {
+                          return BlocBuilder<MyContestsBloc, MyContestsState>(
+                            builder: (context, myContestsState) {
+                              if (teamState.teams.isEmpty) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        "You haven't created a team yet!",
                                         style: TextStyle(
-                                          color: Colors.white,
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                          letterSpacing: 1,
+                                          fontSize: 18,
+                                          color: Colors.black87,
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                          return ListView.builder(
-                            padding: EdgeInsets.all(16),
-                            itemCount: state.teams.length,
-                            itemBuilder: (context, idx) {
-                              final team = state.teams[idx];
-                              final players = List<Map<String, dynamic>>.from(
-                                  team['players'] ?? []);
-                              final team1 = players.isNotEmpty
-                                  ? players.first['team']
-                                  : 'T1';
-                              final team2 = players.length > 1
-                                  ? players[1]['team']
-                                  : 'T2';
-                              final team1Count = players
-                                  .where((p) => p['team'] == team1)
-                                  .length;
-                              final team2Count = players
-                                  .where((p) => p['team'] == team2)
-                                  .length;
-                              Map<String, dynamic>? captain = players
-                                  .cast<Map<String, dynamic>?>()
-                                  .firstWhere(
-                                    (p) =>
-                                        p != null &&
-                                        p['id'] == team['captainId'],
-                                    orElse: () => null,
-                                  );
-                              Map<String, dynamic>? viceCaptain = players
-                                  .cast<Map<String, dynamic>?>()
-                                  .firstWhere(
-                                    (p) =>
-                                        p != null &&
-                                        p['id'] == team['viceCaptainId'],
-                                    orElse: () => null,
-                                  );
-                              final wkCount = players
-                                  .where((p) => p['role'] == 'WK')
-                                  .length;
-                              final batCount = players
-                                  .where((p) => p['role'] == 'BAT')
-                                  .length;
-                              final arCount = players
-                                  .where((p) => p['role'] == 'AR')
-                                  .length;
-                              final bowlCount = players
-                                  .where((p) => p['role'] == 'BOWL')
-                                  .length;
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8.0),
-                                child: Column(
-                                  children: [
-                                    // 🔺 Backup Info Banner
-                                    /*  Container(
-                                      margin: EdgeInsets.only(bottom: 6),
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 12, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: Color(0xFFFFEFEF),
-                                        borderRadius: BorderRadius.circular(8),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        "The first step to winning starts here.",
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey[700],
+                                        ),
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.trending_up,
-                                              color: Colors.green, size: 20),
-                                          SizedBox(width: 8),
-                                          Expanded(
-                                            child: RichText(
-                                              text: TextSpan(
-                                                text: 'Add up to ',
-                                                style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontSize: 13),
-                                                children: [
-                                                  TextSpan(
-                                                    text: '4 Backups ',
-                                                    style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold),
-                                                  ),
-                                                  TextSpan(text: 'in your team'),
-                                                ],
+                                      SizedBox(height: 32),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color:
+                                              Color(0XFF00A203), // Green color
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: TextButton.icon(
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    M11_CreateTeamScreen(
+                                                  source:
+                                                      'teams_tab', // Indicate source is teams tab
+                                                ),
                                               ),
+                                            );
+                                          },
+                                          icon: Icon(Icons.add_circle,
+                                              color: Colors.white, size: 20),
+                                          label: Text(
+                                            "CREATE A TEAM",
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                              letterSpacing: 1,
                                             ),
                                           ),
-                                          TextButton(
-                                            onPressed: () {},
-                                            child: Row(
-                                              children: [
-                                                Text("Add",
-                                                    style: TextStyle(
-                                                        color: Colors.red)),
-                                                Icon(Icons.chevron_right,
-                                                    size: 16, color: Colors.red),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
-                                 */
-                                    // 🔷 White Card
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(16),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black12,
-                                            blurRadius: 8,
-                                            offset: Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          // 🟩 Green Header
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              color: Color(0xFF1B5E20),
-                                              borderRadius:
-                                                  BorderRadius.vertical(
-                                                      top: Radius.circular(16)),
-                                            ),
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 16, vertical: 12),
-                                            child: Column(
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        team['name'] ??
-                                                            'SANDY C... (T1)',
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 16,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    IconButton(
-                                                      icon: Icon(Icons.edit,
-                                                          color: Colors.white),
-                                                      onPressed: () {
-                                                        Navigator.push(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                            builder: (context) =>
-                                                                M11_CreateTeamScreen(
-                                                              key: UniqueKey(),
-                                                              initialSelectedPlayerIds: players
-                                                                  .map<int>((p) =>
-                                                                      p['id']
-                                                                          as int)
-                                                                  .toSet(),
-                                                              initialCaptainId:
-                                                                  team[
-                                                                      'captainId'],
-                                                              initialViceCaptainId:
-                                                                  team[
-                                                                      'viceCaptainId'],
-                                                              teamName:
-                                                                  team['name'],
-                                                              teamId:
-                                                                  team['id'],
-                                                              source:
-                                                                  'teams_tab', // Indicate source is teams tab
-                                                            ),
-                                                          ),
-                                                        );
-                                                      },
-                                                    ),
-                                                    SizedBox(width: 10),
-                                                    Icon(Icons.swap_vert,
-                                                        color: Colors.white),
-                                                    SizedBox(width: 10),
-                                                    Icon(Icons.copy,
-                                                        color: Colors.white),
-                                                  ],
-                                                ),
-                                                SizedBox(height: 8),
-                                                // 💠 Team 1 - Captain - ViceCaptain - Team 2
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  children: [
-                                                    Column(
-                                                      children: [
-                                                        Text(team1,
-                                                            style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 13)),
-                                                        Text('$team1Count',
-                                                            style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 18,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold)),
-                                                      ],
-                                                    ),
-                                                    // Captain
-                                                    Column(
-                                                      children: [
-                                                        Stack(
-                                                          clipBehavior:
-                                                              Clip.none,
-                                                          children: [
-                                                            CircleAvatar(
-                                                              backgroundImage:
-                                                                  NetworkImage(
-                                                                      captain![
-                                                                          'image']),
-                                                              radius: 27,
-                                                            ),
-                                                            Positioned(
-                                                              top: -6,
-                                                              left: -6,
-                                                              child:
-                                                                  CircleAvatar(
-                                                                backgroundColor:
-                                                                    Colors
-                                                                        .white,
-                                                                radius: 10,
-                                                                child: Text('C',
-                                                                    style: TextStyle(
-                                                                        color: Colors
-                                                                            .black,
-                                                                        fontSize:
-                                                                            10,
-                                                                        fontWeight:
-                                                                            FontWeight.bold)),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        SizedBox(height: 4),
-                                                        Text(captain['name'],
-                                                            style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 12)),
-                                                      ],
-                                                    ),
-                                                    // Vice Captain
-                                                    Column(
-                                                      children: [
-                                                        Stack(
-                                                          clipBehavior:
-                                                              Clip.none,
-                                                          children: [
-                                                            CircleAvatar(
-                                                              backgroundImage:
-                                                                  NetworkImage(
-                                                                      viceCaptain![
-                                                                          'image']),
-                                                              radius: 27,
-                                                            ),
-                                                            Positioned(
-                                                              top: -6,
-                                                              left: -6,
-                                                              child:
-                                                                  CircleAvatar(
-                                                                backgroundColor:
-                                                                    Colors
-                                                                        .white,
-                                                                radius: 10,
-                                                                child: Text(
-                                                                    'VC',
-                                                                    style: TextStyle(
-                                                                        color: Colors
-                                                                            .black,
-                                                                        fontSize:
-                                                                            8,
-                                                                        fontWeight:
-                                                                            FontWeight.bold)),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        SizedBox(height: 4),
-                                                        Text(
-                                                            viceCaptain['name'],
-                                                            style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 12)),
-                                                      ],
-                                                    ),
-                                                    Column(
-                                                      children: [
-                                                        Text(team2,
-                                                            style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 13)),
-                                                        Text('$team2Count',
-                                                            style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 18,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold)),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          // 🔽 Role-wise Player Count
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 16, vertical: 12),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.spaceAround,
-                                              children: [
-                                                _playerTypeCount('WK', wkCount),
-                                                _playerTypeCount(
-                                                    'BAT', batCount),
-                                                _playerTypeCount('AR', arCount),
-                                                _playerTypeCount(
-                                                    'BOWL', bowlCount),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
+                                );
+                              }
+                              return ListView(
+                                padding: EdgeInsets.all(16),
+                                children: [
+                                  ...teamState.teams
+                                      .map((team) => _buildTeamCard(team))
+                                      .toList(),
+                                ],
                               );
                             },
                           );
@@ -1715,6 +1825,251 @@ class _ContestDetailsScreenState extends State<ContestDetailsScreen>
       ],
     );
   }
+
+  Widget _buildTeamCard(Map<String, dynamic> team,
+      {bool isAlreadyJoined = false}) {
+    final players = List<Map<String, dynamic>>.from(team['players'] ?? []);
+    final team1 = players.isNotEmpty ? players.first['team'] : 'T1';
+    final team2 = players.length > 1 ? players[1]['team'] : 'T2';
+    final team1Count = players.where((p) => p['team'] == team1).length;
+    final team2Count = players.where((p) => p['team'] == team2).length;
+    Map<String, dynamic>? captain =
+        players.cast<Map<String, dynamic>?>().firstWhere(
+              (p) => p != null && p['id'] == team['captainId'],
+              orElse: () => null,
+            );
+    Map<String, dynamic>? viceCaptain =
+        players.cast<Map<String, dynamic>?>().firstWhere(
+              (p) => p != null && p['id'] == team['viceCaptainId'],
+              orElse: () => null,
+            );
+    final wkCount = players.where((p) => p['role'] == 'WK').length;
+    final batCount = players.where((p) => p['role'] == 'BAT').length;
+    final arCount = players.where((p) => p['role'] == 'AR').length;
+    final bowlCount = players.where((p) => p['role'] == 'BOWL').length;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Column(
+        children: [
+          // Already Joined Badge
+          if (isAlreadyJoined)
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                border: Border(
+                  bottom: BorderSide(color: Colors.green[200]!, width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 16),
+                  SizedBox(width: 8),
+                  Text(
+                    "Already Joined",
+                    style: TextStyle(
+                      color: Colors.green[700],
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          // 🔷 White Card
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // 🟩 Green Header (with opacity for already joined teams)
+                Container(
+                  decoration: BoxDecoration(
+                    color: isAlreadyJoined
+                        ? Color(0xFF1B5E20).withOpacity(0.7)
+                        : Color(0xFF1B5E20),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(isAlreadyJoined ? 0 : 16),
+                      bottom: Radius.circular(0),
+                    ),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              team['name'] ?? 'SANDY C... (T1)',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.edit, color: Colors.white),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => M11_CreateTeamScreen(
+                                    key: UniqueKey(),
+                                    initialSelectedPlayerIds: players
+                                        .map<int>((p) => p['id'] as int)
+                                        .toSet(),
+                                    initialCaptainId: team['captainId'],
+                                    initialViceCaptainId: team['viceCaptainId'],
+                                    teamName: team['name'],
+                                    teamId: team['id'],
+                                    source:
+                                        'teams_tab', // Indicate source is teams tab
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(width: 10),
+                          Icon(Icons.swap_vert, color: Colors.white),
+                          SizedBox(width: 10),
+                          Icon(Icons.copy, color: Colors.white),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      // 💠 Team 1 - Captain - ViceCaptain - Team 2
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            children: [
+                              Text(team1,
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 13)),
+                              Text('$team1Count',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          // Captain
+                          Column(
+                            children: [
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundImage: NetworkImage(
+                                        captain?['image'] ??
+                                            'https://via.placeholder.com/50'),
+                                    radius: 27,
+                                  ),
+                                  Positioned(
+                                    top: -6,
+                                    left: -6,
+                                    child: CircleAvatar(
+                                      backgroundColor: Colors.white,
+                                      radius: 10,
+                                      child: Text('C',
+                                          style: TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 4),
+                              Text(captain?['name'] ?? 'J Root',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 12)),
+                            ],
+                          ),
+                          // Vice Captain
+                          Column(
+                            children: [
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundImage: NetworkImage(
+                                        viceCaptain?['image'] ??
+                                            'https://via.placeholder.com/50'),
+                                    radius: 27,
+                                  ),
+                                  Positioned(
+                                    top: -6,
+                                    left: -6,
+                                    child: CircleAvatar(
+                                      backgroundColor: Colors.white,
+                                      radius: 10,
+                                      child: Text('VC',
+                                          style: TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.bold)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 4),
+                              Text(viceCaptain?['name'] ?? 'L Rahul',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 12)),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              Text(team2,
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 13)),
+                              Text('$team2Count',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // 🔽 Role-wise Player Count
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _playerTypeCount('WK', wkCount),
+                      _playerTypeCount('BAT', batCount),
+                      _playerTypeCount('AR', arCount),
+                      _playerTypeCount('BOWL', bowlCount),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class ContestCard extends StatefulWidget {
@@ -1759,31 +2114,33 @@ class _ContestCardState extends State<ContestCard> {
           child: Column(
             children: [
               // Share bar
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: const [
-                    Expanded(
-                      child: Text(
-                        "Share this contest with your friends!",
-                        style: TextStyle(
-                          color: Colors.black87,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+              Visibility(
+                visible: false,
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: const [
+                      Expanded(
+                        child: Text(
+                          "Share this contest with your friends!",
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
-                    Icon(Icons.share, size: 18, color: Colors.blue),
-                  ],
+                      Icon(Icons.share, size: 18, color: Colors.blue),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
 
               // Contest Card
               StatefulBuilder(

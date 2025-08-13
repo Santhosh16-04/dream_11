@@ -8,6 +8,7 @@ import 'package:clever_11/presentation/screens/c11_registration/m11_registration
 import 'package:clever_11/presentation/screens/home/c11_home.dart';
 import 'package:clever_11/presentation/screens/m11_splash.dart';
 import 'package:clever_11/presentation/screens/verify_account_screen.dart';
+import 'package:clever_11/presentation/screens/home/my_matches_screen.dart';
 
 class M11_AppRoutes {
   static const String m11_splash = '/m11_splash';
@@ -19,6 +20,7 @@ class M11_AppRoutes {
   static const String verify_account = '/verify_account';
   static const String c11_main_payment = '/c11_main_payment';
   static const String c11_payment_options = '/c11_payment_options';
+  static const String my_matches = '/my_matches';
 
   static Map<String, WidgetBuilder> routes = {
     m11_splash: (context) => const M11_SplashScreen(),
@@ -37,11 +39,15 @@ class M11_AppRoutes {
     m11_team_create: (context) => const M11_CreateTeamScreen(),
     c11_main_payment: (context) {
       final args = ModalRoute.of(context)!.settings.arguments;
-      final contestId = args is Map<String, dynamic> ? args['contestId'] ?? 'default' : 'default';
-      final contestData = args is Map<String, dynamic> ? args['contestData'] ?? {} : {};
+      final contestId = args is Map<String, dynamic>
+          ? args['contestId'] ?? 'default'
+          : 'default';
+      final contestData =
+          args is Map<String, dynamic> ? args['contestData'] ?? {} : {};
       return PaymentScreen(contestId: contestId, contestData: contestData);
     },
     c11_payment_options: (context) => const PaymentOptions(),
+    my_matches: (context) => const MyMatchesScreen(),
     m11_profile: (context) {
       final args = ModalRoute.of(context)!.settings.arguments;
       if (args == null || args is! Map<String, dynamic>) {

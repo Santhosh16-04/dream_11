@@ -7,6 +7,8 @@ import 'presentation/blocs/my_contests/my_contests_bloc.dart';
 import 'presentation/blocs/my_contests/my_contests_events.dart';
 
 void main() {
+  // Ensure binding is initialized before any plugins (e.g., SharedPreferences)
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     MultiBlocProvider(
       providers: [

@@ -1,11 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:clever_11/presentation/widgets/network_image_loader.dart';
-import 'dart:async';
-
 import 'package:clever_11/routes/m11_routes.dart';
 import 'package:clever_11/presentation/screens/contest/contest_details_screen.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 
 class M11_Home extends StatefulWidget {
   const M11_Home({super.key});
@@ -18,14 +19,14 @@ class _M11_HomeState extends State<M11_Home> {
   int _selectedIndex = 0;
   List<dynamic> _homeTemplates = [];
   bool _isLoading = true;
-  PageController? _sliderController;
-  Timer? _autoPlayTimer;
   int _selectedCategoryTab = 0;
   String _selectedSportsCategory = 'Cricket';
   String _selectedContestType = 'Recommended';
   int _selectedSpecialCategoryTab = 0;
   String _selectedSpecialCategory = '';
   bool _showSpecialContestRow = false;
+  PageController? _sliderController;
+  Timer? _autoPlayTimer;
 
   @override
   void initState() {
@@ -35,9 +36,9 @@ class _M11_HomeState extends State<M11_Home> {
 
   @override
   void dispose() {
+    super.dispose();
     _sliderController?.dispose();
     _autoPlayTimer?.cancel();
-    super.dispose();
   }
 
   Future<void> _loadHomeTemplates() async {
@@ -54,9 +55,9 @@ class _M11_HomeState extends State<M11_Home> {
     final autoPlay = options['autoPlay']?.toString().toLowerCase() == 'true';
     final interval = _parseInt(options['autoPlayInterval'] ?? '3');
 
-    if (autoPlay && interval > 0) { 
+    if (autoPlay && interval > 0) {
       _autoPlayTimer?.cancel();
-      _autoPlayTimer = Timer.periodic(Duration(seconds: interval), (timer) { 
+      _autoPlayTimer = Timer.periodic(Duration(seconds: interval), (timer) {
         if (_sliderController != null && _sliderController!.hasClients) {
           final currentPage = _sliderController!.page?.round() ?? 0;
           final nextPage = (currentPage + 1) %
@@ -94,7 +95,10 @@ class _M11_HomeState extends State<M11_Home> {
   }
 
   void _onItemTapped(int index) {
-    if (index == 2) {
+    if (index == 1) {
+      // Navigate to My Matches screen
+      Navigator.pushNamed(context, M11_AppRoutes.my_matches);
+    } else if (index == 2) {
       // Navigate to profile screen with personal data
       final personalData = _homeTemplates
           .firstWhere((t) => t['type'] == 'personal_data', orElse: () => {});
@@ -152,7 +156,8 @@ class _M11_HomeState extends State<M11_Home> {
                   'contestId': 'wallet_add_cash',
                   'contestData': {
                     'title': 'Add Cash to Wallet',
-                    'description': 'Add money to your wallet for contest participation',
+                    'description':
+                        'Add money to your wallet for contest participation',
                     'amount': '0',
                   },
                 },
@@ -232,7 +237,9 @@ class _M11_HomeState extends State<M11_Home> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => ContestDetailsScreen(initialTabIndex: 0)),
+              MaterialPageRoute(
+                  builder: (context) =>
+                      ContestDetailsScreen(initialTabIndex: 0)),
             );
           },
           child: _buildMatchCard(
@@ -1045,6 +1052,15 @@ class _M11_HomeState extends State<M11_Home> {
     } catch (e) {
       return EdgeInsets.zero;
     }
+  }
+
+  bool _parseBool(dynamic value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is String) {
+      return value.toLowerCase() == 'true';
+    }
+    return false;
   }
 
   // Add this function to filter contests by sports_category and contest_type

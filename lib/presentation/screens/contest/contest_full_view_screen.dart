@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:clever_11/presentation/screens/contest/select_team_screen.dart';
+import 'package:clever_11/presentation/screens/contest/create_team_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:clever_11/cubit/team/team_bloc.dart';
 import 'package:clever_11/routes/m11_routes.dart';
+import 'package:clever_11/presentation/blocs/my_contests/my_contests_bloc.dart';
+import 'package:clever_11/presentation/blocs/my_contests/my_contests_events.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ContestFullViewScreen extends StatefulWidget {
   const ContestFullViewScreen({Key? key}) : super(key: key);
@@ -45,6 +49,349 @@ class _ContestFullViewScreenState extends State<ContestFullViewScreen>
     _tabController.dispose();
     _subTabController.dispose();
     super.dispose();
+  }
+
+  // Join contest method
+  void _joinContest(dynamic contest) {
+    // Add to MyContestsBloc to update the My Contests tab
+    final myContestsBloc = BlocProvider.of<MyContestsBloc>(context, listen: false);
+    final contestId = contest['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
+    myContestsBloc.add(AddContestToMyContests(contestId, contest));
+    print('Added contest to MyContestsBloc: $contestId');
+  }
+
+  // Add join contest flow method according to flowchart
+  Future<void> _handleJoinContestFlow(dynamic contest, String contestId) async {
+    // Get current team state and augment with persisted teams to avoid first-launch race conditions
+    final teamState = context.read<TeamBloc>().state;
+    List<Map<String, dynamic>> teams = List<Map<String, dynamic>>.from(teamState.teams);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final teamsJson = prefs.getString('saved_teams');
+      if ((teams.isEmpty) && teamsJson != null && teamsJson.isNotEmpty) {
+        final List decoded = json.decode(teamsJson) as List;
+        teams = decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+    } catch (_) {}
+    if (teams.isEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => M11_CreateTeamScreen(
+            source: 'join_contest',
+          ),
+        ),
+      );
+      return;
+    }
+    
+    // Check wallet balance (simulated - you should get this from your wallet service)
+    final walletBalance = 49.0; // This should come from your wallet service
+    final contestEntryFee = double.tryParse(contest['discounted_entry']?.toString() ?? contest['entry']?.toString() ?? '0') ?? 0.0;
+    
+    // Debug information
+    print('Join Contest Flow Debug:');
+    print('Teams count: ${teams.length}');
+    print('Wallet balance: $walletBalance');
+    print('Contest entry fee: $contestEntryFee');
+    print('Contest data: ${contest.toString()}');
+    
+    // Flowchart Logic Implementation
+    
+    // Condition 1: Check if team exists
+    if (teams.isEmpty) {
+      print('Flow: No teams exist - Going to Create Team Screen');
+      // No team exists - Go to Create Team Screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => M11_CreateTeamScreen(
+            source: 'join_contest',
+          ),
+        ),
+      );
+    } else if (teams.length == 1) {
+      print('Flow: Single team exists - Checking wallet balance');
+      // Single team exists - Check wallet balance
+      if (walletBalance >= contestEntryFee) {
+        print('Flow: Sufficient balance - Opening confirmation bottom sheet');
+        // Wallet has sufficient balance - Show confirmation bottom sheet
+        _showJoinContestConfirmation(contest, contestId);
+      } else {
+        print('Flow: Insufficient balance - Going to Payment Screen');
+        // Insufficient balance - Go to Payment Screen
+        Navigator.pushNamed(
+          context,
+          M11_AppRoutes.c11_main_payment,
+          arguments: {
+            'contestId': contestId,
+            'contestData': contest,
+          },
+        );
+      }
+    } else {
+      print('Flow: Multiple teams exist - Going to Select Team Screen');
+      // Multiple teams exist - Go to Select Team Screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SelectTeamScreen(
+            timeLeftMinutes: 109,
+            maxTeams: 20,
+            contestData: contest,
+            contestId: contestId,
+          ),
+        ),
+      );
+    }
+  }
+
+  // Show join contest confirmation bottom sheet
+  void _showJoinContestConfirmation(dynamic contest, String contestId) {
+    final originalEntry = double.tryParse(
+            contest['original_entry']?.toString() ??
+                contest['entry']?.toString() ??
+                '0') ??
+        0.0;
+    final discountedEntry = double.tryParse(
+            contest['discounted_entry']?.toString() ??
+                contest['entry']?.toString() ??
+                '0') ??
+        0.0;
+    final discountAmount = originalEntry - discountedEntry;
+    final finalAmount = discountedEntry;
+    final walletBalance = 49.0; // This should come from your wallet service
+    final unutilisedAmount = walletBalance - finalAmount;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.5,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.close, color: Colors.grey[600]),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Confirmation',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            'Amount Unutilised + Winnings = ₹${unutilisedAmount.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Scrollable content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Column(
+                  children: [
+                    // Entry Card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Entry ',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            '₹${originalEntry.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Discount Pass Card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.green[100],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.discount,
+                                  color: Colors.green[700],
+                                  size: 14,
+                                ),
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'Discount Pass',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '- ₹${discountAmount.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // To Pay Card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'To Pay',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            '₹${finalAmount.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Terms and Conditions
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Text(
+                    'I agree with the standard ',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  Text(
+                    'T&Cs',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Fixed Join Contest Button
+            SafeArea(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _joinContest(contest);
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Contest joined successfully!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                      
+                      setState(() {});
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF009905),
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'JOIN CONTEST',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -272,34 +619,8 @@ class _ContestFullViewScreenState extends State<ContestFullViewScreen>
                         padding: EdgeInsets.symmetric(vertical: 8),
                       ),
                       onPressed: () {
-                        // Check team count and navigate accordingly
-                        final teamState = context.read<TeamBloc>().state;
-                        if (teamState.teams.length == 1) {
-                          // If only one team, go directly to payment
-                          Navigator.pushNamed(
-                            context,
-                            M11_AppRoutes.c11_main_payment,
-                            arguments: {
-                              'contestId':
-                                  contest['id']?.toString() ?? 'default',
-                              'contestData': contest,
-                            },
-                          );
-                        } else {
-                          // If multiple teams, go to select team screen
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SelectTeamScreen(
-                                timeLeftMinutes: 109,
-                                maxTeams: 20,
-                                contestData: contest,
-                                contestId:
-                                    contest['id']?.toString() ?? 'default',
-                              ),
-                            ),
-                          );
-                        }
+                        // Implement join contest flow according to flowchart
+                        _handleJoinContestFlow(contest, contest['id']?.toString() ?? 'default');
                       },
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
