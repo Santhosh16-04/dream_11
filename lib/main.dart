@@ -21,6 +21,8 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  // testing commit
+
   // Initialize FCM
   await Firebasemsg().initFCM();
 
