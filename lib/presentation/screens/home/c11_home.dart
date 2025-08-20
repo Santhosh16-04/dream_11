@@ -1,3 +1,4 @@
+import 'package:clever_11/presentation/screens/contest/backup_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
@@ -138,7 +139,9 @@ class _M11_HomeState extends State<M11_Home> {
         actions: [
           IconButton(
             icon: Icon(Icons.notifications_none, color: Colors.white),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const BackUpScreen()));
+            },
           ),
           IconButton(
             icon: Icon(Icons.account_balance_wallet_outlined,
