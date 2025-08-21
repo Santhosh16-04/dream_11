@@ -2,9 +2,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_sticky_header/flutter_sticky_header.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:clever_11/cubit/team/team_bloc.dart';
+import 'package:clever_11/cubit/team/team_event.dart';
 
 class BackUpScreen extends StatefulWidget {
-  const BackUpScreen({super.key});
+  final int? teamId;
+  final List<int>? initialBackupIds;
+
+  const BackUpScreen({super.key, this.teamId, this.initialBackupIds});
 
   @override
   State<BackUpScreen> createState() => _BackUpScreenState();
@@ -23,6 +29,11 @@ class _BackUpScreenState extends State<BackUpScreen> {
   void initState() {
     super.initState();
     _loadPlayers();
+    // Prefill backups if provided
+    final init = widget.initialBackupIds ?? const [];
+    for (int i = 0; i < _backupPlayerIds.length && i < init.length; i++) {
+      _backupPlayerIds[i] = init[i];
+    }
   }
 
   // Reusable hanging header (like in create_team_screen)
@@ -58,7 +69,10 @@ class _BackUpScreenState extends State<BackUpScreen> {
               ),
               child: Text(
                 text,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10),
               ),
             )
           ],
@@ -68,6 +82,9 @@ class _BackUpScreenState extends State<BackUpScreen> {
   }
 
   Widget _buildBottomBar() {
+    // Check if all 4 backup slots are filled
+    final bool allSlotsFilled = !_backupPlayerIds.contains(null);
+
     return Container(
       color: Colors.transparent,
       padding: const EdgeInsets.only(left: 40, right: 40, bottom: 24, top: 0),
@@ -91,7 +108,8 @@ class _BackUpScreenState extends State<BackUpScreen> {
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.remove_red_eye_outlined, color: Colors.white, size: 22),
+                    Icon(Icons.remove_red_eye_outlined,
+                        color: Colors.white, size: 22),
                     SizedBox(width: 8),
                     Text(
                       'PREVIEW',
@@ -108,39 +126,58 @@ class _BackUpScreenState extends State<BackUpScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          Expanded(
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1DB954),
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(25),
-                onTap: () {
-                  // Save backups; you can wire this to your actual save action
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Backups saved')),
-                  );
-                },
-                child: const Center(
-                  child: Text(
-                    'SAVE',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      letterSpacing: 0.5,
+          // Only show SAVE button when all 4 slots are filled
+          if (allSlotsFilled)
+            Expanded(
+              child: Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1DB954),
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(25),
+                  onTap: () {
+                    // Save backups to TeamBloc if teamId provided, then pop
+                    final selectedIds =
+                        _backupPlayerIds.whereType<int>().toList();
+                    try {
+                      if (widget.teamId != null) {
+                        final teamBloc =
+                            BlocProvider.of<TeamBloc>(context, listen: false);
+                        final existing = teamBloc.state.teams.firstWhere(
+                            (t) => t['id'] == widget.teamId,
+                            orElse: () => {});
+                        final updatedTeam = Map<String, dynamic>.from(existing);
+                        updatedTeam['backups'] = selectedIds;
+                        teamBloc.add(EditTeam(widget.teamId!, updatedTeam));
+                      }
+                    } catch (_) {}
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Backups saved')),
+                    );
+                    Navigator.pop(context);
+                  },
+                  child: const Center(
+                    child: Text(
+                      'SAVE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
+
   Future<void> _loadPlayers() async {
     final String jsonString =
         await rootBundle.loadString('assets/json/team_players.json');
@@ -161,17 +198,20 @@ class _BackUpScreenState extends State<BackUpScreen> {
               .compareTo((b['percentage'] ?? 0) as num);
           break;
         case 'credits':
-          cmp = _parseDouble(a['credits']).compareTo(_parseDouble(b['credits']));
+          cmp =
+              _parseDouble(a['credits']).compareTo(_parseDouble(b['credits']));
           break;
         case 'runs':
           cmp = ((a['runs'] ?? 0) as num).compareTo((b['runs'] ?? 0) as num);
           break;
         case 'wickets':
-          cmp = ((a['wickets'] ?? 0) as num).compareTo((b['wickets'] ?? 0) as num);
+          cmp = ((a['wickets'] ?? 0) as num)
+              .compareTo((b['wickets'] ?? 0) as num);
           break;
         case 'points':
         default:
-          cmp = ((a['points'] ?? 0) as num).compareTo((b['points'] ?? 0) as num);
+          cmp =
+              ((a['points'] ?? 0) as num).compareTo((b['points'] ?? 0) as num);
       }
       return _sortAsc ? cmp : -cmp;
     });
@@ -180,7 +220,8 @@ class _BackUpScreenState extends State<BackUpScreen> {
 
   void _toggleSelect(dynamic player) {
     final int playerId = player['id'] as int;
-    final int existingIndex = _backupPlayerIds.indexWhere((id) => id == playerId);
+    final int existingIndex =
+        _backupPlayerIds.indexWhere((id) => id == playerId);
 
     setState(() {
       if (existingIndex != -1) {
@@ -226,9 +267,14 @@ class _BackUpScreenState extends State<BackUpScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
-            Text('Add Backups', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('Add Backups',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold)),
             SizedBox(height: 2),
-            Text('1h 27m left', style: TextStyle(color: Colors.white70, fontSize: 12)),
+            Text('1h 27m left',
+                style: TextStyle(color: Colors.white70, fontSize: 12)),
           ],
         ),
         actions: [
@@ -272,11 +318,13 @@ class _BackUpScreenState extends State<BackUpScreen> {
                       ),
                       const SizedBox(height: 8),
                       Row(
-                        children: List.generate(4, (i) => Expanded(child: _slotCard(i))),
+                        children: List.generate(
+                            4, (i) => Expanded(child: _slotCard(i))),
                       ),
                       const SizedBox(height: 10),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Color(0xFF0E1114).withOpacity(0.6),
                           borderRadius: BorderRadius.circular(10),
@@ -285,7 +333,10 @@ class _BackUpScreenState extends State<BackUpScreen> {
                         child: const Text(
                           'Priority Order: B1 (first) > B2 > B3 > B4 (last)',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
@@ -308,7 +359,8 @@ class _BackUpScreenState extends State<BackUpScreen> {
                       return CustomScrollView(
                         slivers: [
                           SliverStickyHeader(
-                            header: _hangingHeader('Announced', const Color(0xFF1DB954)),
+                            header: _hangingHeader(
+                                'Announced', const Color(0xFF1DB954)),
                             sliver: SliverList(
                               delegate: SliverChildBuilderDelegate(
                                 (context, idx) => _playerRow(announced[idx]),
@@ -317,7 +369,8 @@ class _BackUpScreenState extends State<BackUpScreen> {
                             ),
                           ),
                           SliverStickyHeader(
-                            header: _hangingHeader('Unannounced', const Color(0xFFF57C00)),
+                            header: _hangingHeader(
+                                'Unannounced', const Color(0xFFF57C00)),
                             sliver: SliverList(
                               delegate: SliverChildBuilderDelegate(
                                 (context, idx) => _playerRow(unannounced[idx]),
@@ -360,11 +413,19 @@ class _BackUpScreenState extends State<BackUpScreen> {
                   label: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(f['label']!, style: TextStyle(fontWeight: FontWeight.bold, color: isSel ? Colors.white : Colors.black)),
+                      Text(f['label']!,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isSel ? Colors.white : Colors.black)),
                       if (isSel)
                         Padding(
                           padding: const EdgeInsets.only(left: 4.0),
-                          child: Icon(_sortAsc ? Icons.arrow_upward : Icons.arrow_downward, size: 14, color: Colors.white),
+                          child: Icon(
+                              _sortAsc
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_downward,
+                              size: 14,
+                              color: Colors.white),
                         )
                     ],
                   ),
@@ -408,7 +469,8 @@ class _BackUpScreenState extends State<BackUpScreen> {
         : null;
 
     final Color cardBg = const Color(0xFFFFF6E5); // light cream
-    final Color borderColor = isActive ? const Color(0xFFDFB980) : const Color(0xFFEAE1D4);
+    final Color borderColor =
+        isActive ? const Color(0xFFDFB980) : const Color(0xFFEAE1D4);
 
     return GestureDetector(
       onTap: () => setState(() => _activeSlotIndex = index),
@@ -420,7 +482,10 @@ class _BackUpScreenState extends State<BackUpScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: borderColor, width: isActive ? 2 : 1),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 6, offset: const Offset(0, 2)),
+            BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 6,
+                offset: const Offset(0, 2)),
           ],
         ),
         child: Stack(
@@ -436,7 +501,10 @@ class _BackUpScreenState extends State<BackUpScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text('B${index + 1}',
-                    style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF6B4E2E), fontSize: 12)),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF6B4E2E),
+                        fontSize: 12)),
               ),
             ),
             if (assigned != null)
@@ -453,7 +521,8 @@ class _BackUpScreenState extends State<BackUpScreen> {
                   child: CircleAvatar(
                     radius: 10,
                     backgroundColor: const Color(0xFFFFE1E1),
-                    child: const Icon(Icons.remove, size: 14, color: Colors.red),
+                    child:
+                        const Icon(Icons.remove, size: 14, color: Colors.red),
                   ),
                 ),
               ),
@@ -466,9 +535,12 @@ class _BackUpScreenState extends State<BackUpScreen> {
                 children: [
                   CircleAvatar(
                     radius: 22,
-                    backgroundImage: assigned != null ? AssetImage(assigned['image']) : null,
+                    backgroundImage:
+                        assigned != null ? AssetImage(assigned['image']) : null,
                     backgroundColor: Colors.grey[300],
-                    child: assigned == null ? const Icon(Icons.person, color: Colors.white70) : null,
+                    child: assigned == null
+                        ? const Icon(Icons.person, color: Colors.white70)
+                        : null,
                   ),
                   const SizedBox(height: 6),
                   Padding(
@@ -477,12 +549,16 @@ class _BackUpScreenState extends State<BackUpScreen> {
                       assigned != null ? assigned['name'] : 'Select player',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.black),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          color: Colors.black),
                     ),
                   ),
                   const SizedBox(height: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
@@ -492,7 +568,8 @@ class _BackUpScreenState extends State<BackUpScreen> {
                       assigned != null
                           ? '${assigned['team']} ${_roleLabel(assigned['role'])}'
                           : '— —',
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                          fontSize: 10, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -527,8 +604,11 @@ class _BackUpScreenState extends State<BackUpScreen> {
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(6)),
-                child: Text(p['team'], style: const TextStyle(color: Colors.white, fontSize: 9)),
+                decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(6)),
+                child: Text(p['team'],
+                    style: const TextStyle(color: Colors.white, fontSize: 9)),
               ),
             ],
           ),
@@ -540,29 +620,41 @@ class _BackUpScreenState extends State<BackUpScreen> {
                 Row(
                   children: [
                     Flexible(
-                      child: Text(p['name'], style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13), overflow: TextOverflow.ellipsis),
+                      child: Text(p['name'],
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 13),
+                          overflow: TextOverflow.ellipsis),
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(p['role'], style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                      child: Text(p['role'],
+                          style: const TextStyle(
+                              fontSize: 10, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Text('${p['percentage']}%', style: const TextStyle(fontSize: 11, color: Colors.black87)),
+                    Text('${p['percentage']}%',
+                        style: const TextStyle(
+                            fontSize: 11, color: Colors.black87)),
                     const SizedBox(width: 12),
                     Container(width: 1, height: 12, color: Colors.grey[300]),
                     const SizedBox(width: 12),
-                    Text('${p['points']} pts', style: TextStyle(fontSize: 11, color: Colors.grey[700])),
+                    Text('${p['points']} pts',
+                        style:
+                            TextStyle(fontSize: 11, color: Colors.grey[700])),
                     const Spacer(),
-                    Text('${_parseDouble(p['credits']).toStringAsFixed(1)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    Text('${_parseDouble(p['credits']).toStringAsFixed(1)}',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 12)),
                     const SizedBox(width: 2),
                     const Text('Cr', style: TextStyle(fontSize: 11)),
                   ],
@@ -575,7 +667,11 @@ class _BackUpScreenState extends State<BackUpScreen> {
             onTap: disabled ? null : () => _toggleSelect(p),
             child: CircleAvatar(
               radius: 14,
-              backgroundColor: disabled ? Colors.grey[200] : (selected ? const Color(0xFFFFE9E9) : const Color(0xFFE8F0FE)),
+              backgroundColor: disabled
+                  ? Colors.grey[200]
+                  : (selected
+                      ? const Color(0xFFFFE9E9)
+                      : const Color(0xFFE8F0FE)),
               child: Icon(
                 selected ? Icons.remove : Icons.add,
                 size: 16,
@@ -604,7 +700,11 @@ class _RulesChip extends StatelessWidget {
         children: const [
           Icon(Icons.rule, size: 16, color: Colors.white),
           SizedBox(width: 6),
-          Text('Rules', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+          Text('Rules',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold)),
         ],
       ),
     );

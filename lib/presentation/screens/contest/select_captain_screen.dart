@@ -45,7 +45,7 @@ class _SelectCaptainScreenState extends State<SelectCaptainScreen> {
     for (var player in widget.players) {
       grouped.putIfAbsent(player['role'], () => []).add(player);
     }
-    // Sort each group if a filter is active
+    // Sort each group if a filter is active/*
     if (sortBy != null) {
       for (var group in grouped.values) {
         group.sort((a, b) {
@@ -375,12 +375,21 @@ class _SelectCaptainScreenState extends State<SelectCaptainScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   // Calculate or use dummy values for preview
-                  double creditsLeft = 0; // TODO: Replace with actual credits left if available
-                  String team1 = widget.players.isNotEmpty ? widget.players.first['team'] : 'T1';
-                  String team2 = widget.players.length > 1 ? widget.players[1]['team'] : 'T2';
-                  int team1Count = widget.players.where((p) => p['team'] == team1).length;
-                  int team2Count = widget.players.where((p) => p['team'] == team2).length;
-                  List<Map<String, dynamic>> selectedPlayers = widget.players.map((p) => Map<String, dynamic>.from(p)).toList();
+                  double creditsLeft =
+                      0; // TODO: Replace with actual credits left if available
+                  String team1 = widget.players.isNotEmpty
+                      ? widget.players.first['team']
+                      : 'T1';
+                  String team2 = widget.players.length > 1
+                      ? widget.players[1]['team']
+                      : 'T2';
+                  int team1Count =
+                      widget.players.where((p) => p['team'] == team1).length;
+                  int team2Count =
+                      widget.players.where((p) => p['team'] == team2).length;
+                  List<Map<String, dynamic>> selectedPlayers = widget.players
+                      .map((p) => Map<String, dynamic>.from(p))
+                      .toList();
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => PreviewTeamScreen(
@@ -405,23 +414,26 @@ class _SelectCaptainScreenState extends State<SelectCaptainScreen> {
             ),
             SizedBox(width: 12),
             Expanded(
-              child: ElevatedButton(      
+              child: ElevatedButton(
                 onPressed: (captainId != null &&
                         viceCaptainId != null &&
                         captainId != viceCaptainId)
                     ? () {
                         final teamData = {
-                          'id': widget.teamId ?? DateTime.now().millisecondsSinceEpoch,
+                          'id': widget.teamId ??
+                              DateTime.now().millisecondsSinceEpoch,
                           'players': widget.players,
                           'captainId': captainId,
                           'viceCaptainId': viceCaptainId,
-                        };  
+                        };
                         if (widget.teamId != null) {
-                          context.read<TeamBloc>().add(EditTeam(widget.teamId!, teamData));
+                          context
+                              .read<TeamBloc>()
+                              .add(EditTeam(widget.teamId!, teamData));
                         } else {
                           context.read<TeamBloc>().add(AddTeam(teamData));
                         }
-                        
+
                         // Handle navigation based on source
                         if (widget.source == 'teams_tab') {
                           // If came from teams tab, navigate to contest details with teams tab

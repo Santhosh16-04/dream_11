@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:clever_11/presentation/screens/contest/create_team_screen.dart';
 import 'package:clever_11/routes/m11_routes.dart';
+import 'package:clever_11/presentation/screens/contest/backup_screen.dart';
 import 'package:clever_11/presentation/screens/contest/contest_full_view_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../cubit/team/team_bloc.dart';
@@ -12,7 +13,6 @@ import 'package:clever_11/presentation/screens/contest/select_team_screen.dart';
 import 'package:clever_11/presentation/blocs/my_contests/my_contests_bloc.dart';
 import 'package:clever_11/presentation/blocs/my_contests/my_contests_states.dart';
 import 'package:clever_11/presentation/blocs/my_contests/my_contests_events.dart';
-import 'package:clever_11/routes/m11_routes.dart';
 
 class ContestDetailsScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -1008,55 +1008,94 @@ class _ContestDetailsScreenState extends State<ContestDetailsScreen>
                                 padding: const EdgeInsets.only(bottom: 8.0),
                                 child: Column(
                                   children: [
-                                    // 🔺 Backup Info Banner
-                                    /*  Container(
-                                      margin: EdgeInsets.only(bottom: 6),
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 12, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: Color(0xFFFFEFEF),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.trending_up,
-                                              color: Colors.green, size: 20),
-                                          SizedBox(width: 8),
-                                          Expanded(
-                                            child: RichText(
-                                              text: TextSpan(
-                                                text: 'Add up to ',
-                                                style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontSize: 13),
-                                                children: [
-                                                  TextSpan(
-                                                    text: '4 Backups ',
-                                                    style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold),
+                                    // 🔺 Backup Info Banner (Add/Edit Backups like Dream11)
+                                    Builder(builder: (context) {
+                                      final List<dynamic> backups =
+                                          List<dynamic>.from(
+                                              team['backups'] ?? []);
+                                      final bool has4 = backups.length == 4;
+                                      return Container(
+                                        margin:
+                                            const EdgeInsets.only(bottom: 6),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: has4
+                                              ? const Color(0xFFE8F5E9)
+                                              : const Color(0xFFFFEBEE),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.swap_horiz,
+                                              color: has4
+                                                  ? const Color(0xFF2E7D32)
+                                                  : const Color(0xFFC62828),
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: RichText(
+                                                text: TextSpan(
+                                                  text: has4
+                                                      ? '4 Backups '
+                                                      : 'Add up to ',
+                                                  style: const TextStyle(
+                                                      color: Colors.black,
+                                                      fontSize: 13),
+                                                  children: [
+                                                    TextSpan(
+                                                      text: has4
+                                                          ? 'added! '
+                                                          : '4 Backups ',
+                                                      style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold),
+                                                    ),
+                                                    if (!has4)
+                                                      const TextSpan(
+                                                          text: 'in your team'),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        BackUpScreen(
+                                                      teamId:
+                                                          team['id'] as int?,
+                                                      initialBackupIds: backups
+                                                          .cast<int>()
+                                                          .toList(),
+                                                    ),
                                                   ),
-                                                  TextSpan(text: 'in your team'),
+                                                );
+                                              },
+                                              child: Row(
+                                                children: [
+                                                  Text(has4 ? 'Edit' : 'Add',
+                                                      style: TextStyle(
+                                                          color: has4
+                                                              ? Colors.green
+                                                              : Colors.red)),
+                                                  Icon(Icons.chevron_right,
+                                                      size: 16,
+                                                      color: has4
+                                                          ? Colors.green
+                                                          : Colors.red),
                                                 ],
                                               ),
                                             ),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {},
-                                            child: Row(
-                                              children: [
-                                                Text("Add",
-                                                    style: TextStyle(
-                                                        color: Colors.red)),
-                                                Icon(Icons.chevron_right,
-                                                    size: 16, color: Colors.red),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                 */
+                                          ],
+                                        ),
+                                      );
+                                    }),
                                     // 🔷 White Card
                                     Container(
                                       decoration: BoxDecoration(

@@ -190,5 +190,12 @@
   "floating_actions": [
     { "icon": "emoji_events", "label": "CONTESTS" },
     { "icon": "add", "label": "CREATE TEAM" }
+  ],
+  "back_up": [
+    { "icon": "emoji_events", "label": "CONTESTS" },
+    { "icon": "add", "label": "CREATE TEAM" }
   ]
+
+
+
 } 
