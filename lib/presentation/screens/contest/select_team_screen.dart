@@ -6,6 +6,8 @@ import '../../../cubit/team/team_bloc.dart';
 import '../../../cubit/team/team_state.dart';
 import 'package:clever_11/presentation/screens/payment_screen.dart'; // Added import for PaymentScreen
 import 'package:clever_11/presentation/screens/contest/create_team_screen.dart'; // Import for M11_CreateTeamScreen
+import 'dart:convert';
+import 'package:flutter/services.dart';
 
 class SelectTeamScreen extends StatefulWidget {
   final int timeLeftMinutes;
@@ -104,6 +106,14 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
                       },
                       child: Text('CREATE TEAM',
                           style: TextStyle(color: Colors.white)),
+                    ),
+                    SizedBox(width: 8),
+                    IconButton(
+                      tooltip: 'Apply Official (Local)',
+                      icon: Icon(Icons.rule, color: Colors.white),
+                      onPressed: () async {
+                        await _applyOfficialLineupLocal();
+                      },
                     ),
                   ],
                 ),
@@ -315,6 +325,111 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
         );
       },
     );
+  }
+
+  Future<void> _applyOfficialLineupLocal() async {
+    try {
+      // Load official players (announced) from local JSON
+      final String jsonString =
+          await rootBundle.loadString('assets/json/team_players.json');
+      final Map<String, dynamic> data = json.decode(jsonString);
+      final List<dynamic> allPlayers = List<dynamic>.from(data['players'] ?? []);
+      final Map<int, Map<String, dynamic>> idToPlayer = {
+        for (final p in allPlayers)
+          if (p['id'] != null) (p['id'] as int): Map<String, dynamic>.from(p)
+      };
+      final Set<int> announcedIds = allPlayers
+          .where((p) => p['announced'] == true)
+          .map<int>((p) => p['id'] as int)
+          .toSet();
+
+      final teamBloc = context.read<TeamBloc>();
+      final List<Map<String, dynamic>> teams =
+          List<Map<String, dynamic>>.from(teamBloc.state.teams);
+
+      int updatedCount = 0;
+
+      for (final original in teams) {
+        final team = Map<String, dynamic>.from(original);
+        final int teamId = team['id'] as int;
+        final List<dynamic> teamPlayersDyn =
+            List<dynamic>.from(team['players'] ?? []);
+        final List<Map<String, dynamic>> teamPlayers = teamPlayersDyn
+            .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e))
+            .toList();
+        final List<int> backups =
+            List<int>.from((team['backups'] ?? const <int>[]) as List);
+
+        // Compute current player ids and missing positions
+        final List<int> currentIds =
+            teamPlayers.map<int>((p) => (p['id'] as int)).toList();
+        final List<int> missingIdx = [];
+        for (int i = 0; i < currentIds.length; i++) {
+          if (!announcedIds.contains(currentIds[i])) {
+            missingIdx.add(i);
+          }
+        }
+
+        if (missingIdx.isEmpty) {
+          continue; // nothing to change for this team
+        }
+
+        // Replace each missing position with first eligible backup in order
+        final Set<int> usedIds = currentIds.toSet();
+        for (final idx in missingIdx) {
+          int? replacementId;
+          for (final bId in backups) {
+            if (announcedIds.contains(bId) && !usedIds.contains(bId)) {
+              replacementId = bId;
+              break;
+            }
+          }
+          if (replacementId != null && idToPlayer.containsKey(replacementId)) {
+            teamPlayers[idx] = Map<String, dynamic>.from(idToPlayer[replacementId]!);
+            usedIds.add(replacementId);
+          }
+        }
+
+        // Keep only first 11 players (safety)
+        final updatedPlayers = teamPlayers.take(11).toList();
+        team['players'] = updatedPlayers;
+
+        // If captain/vice are no longer in team, null them out
+        final Set<int> updatedIdSet =
+            updatedPlayers.map<int>((p) => (p['id'] as int)).toSet();
+        if (team['captainId'] != null &&
+            !updatedIdSet.contains(team['captainId'] as int)) {
+          team['captainId'] = null;
+        }
+        if (team['viceCaptainId'] != null &&
+            !updatedIdSet.contains(team['viceCaptainId'] as int)) {
+          team['viceCaptainId'] = null;
+        }
+
+        // Save
+        context.read<TeamBloc>().add(EditTeam(teamId, team));
+        updatedCount += 1;
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              updatedCount > 0
+                  ? 'Applied official lineup locally to $updatedCount team(s).'
+                  : 'All teams already matched the official lineup.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to apply official lineup locally'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildStat(String label, int? value) {

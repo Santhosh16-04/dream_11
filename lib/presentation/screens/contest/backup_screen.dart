@@ -187,7 +187,7 @@ class _BackUpScreenState extends State<BackUpScreen> {
       _loading = false;
     });
   }
-
+ 
   List<dynamic> get _sortedPlayers {
     final list = List<dynamic>.from(_players);
     list.sort((a, b) {
